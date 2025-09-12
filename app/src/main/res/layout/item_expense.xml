@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="6dp"
+    app:cardUseCompatPadding="true">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <!-- Amount at top-right (left of menu) -->
+        <TextView
+            android:id="@+id/amountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/menuButton"
+            android:layout_alignTop="@id/menuButton"
+            android:layout_marginEnd="8dp"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent_purple"
+            tools:text="S/ 25.00" />
+
+        <LinearLayout
+            android:id="@+id/infoContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/amountText"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/categoryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Comida" />
+
+            <!-- Comment below category -->
+            <TextView
+                android:id="@+id/commentText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="13sp"
+                android:textColor="@android:color/darker_gray"
+                tools:text="Almuerzo en la universidad" />
+
+        </LinearLayout>
+
+        <!-- Date below amount, aligned to end -->
+        <TextView
+            android:id="@+id/dateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/amountText"
+            android:layout_alignEnd="@id/amountText"
+            android:layout_marginTop="2dp"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            tools:text="10/09/2025" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/menuButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:background="@android:color/transparent"
+            android:contentDescription="Menu"
+            android:padding="4dp"
+            app:srcCompat="@drawable/ic_more_vert_24" />
+
+    </RelativeLayout>
+
+</com.google.android.material.card.MaterialCardView>
