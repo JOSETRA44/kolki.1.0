@@ -70,8 +70,10 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
             lastKeyTimes.add(now)
             lastKeyTimes = lastKeyTimes.filter { now - it <= windowMs }.toMutableList()
 
-            // Debug notification to verify detection
-            postSavedNotification("Vol key: ${'$'}{event.keyCode} count=${'$'}{lastKeyTimes.size}/${'$'}requiredPresses in ${'$'}windowMs ms")
+            // Debug notification (disabled by default). Enable by setting prefs "global_debug_notify"=true
+            if (prefs.getBoolean("global_debug_notify", false)) {
+                postSavedNotification("Vol key: ${'$'}{event.keyCode} count=${'$'}{lastKeyTimes.size}/${'$'}requiredPresses in ${'$'}windowMs ms")
+            }
 
             if (lastKeyTimes.size >= requiredPresses && listening.compareAndSet(false, true)) {
                 // Launch lightweight voice capture activity (overlay style)

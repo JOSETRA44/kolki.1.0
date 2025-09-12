@@ -228,34 +228,62 @@ class ExpenseVoiceParser {
     }
     
     private fun extractAmount(amountText: String): Double? {
-        val normalized = amountText.lowercase().trim()
-        
-        // Buscar números decimales primero
-        val decimalPattern = Pattern.compile("(\\d+[.,]\\d+)")
-        val decimalMatcher = decimalPattern.matcher(normalized)
-        if (decimalMatcher.find()) {
-            val numberStr = decimalMatcher.group(1).replace(",", ".")
-            return numberStr.toDoubleOrNull()
+        var normalized = amountText.lowercase().trim()
+
+        // Quitar prefijos/sufijos de moneda comunes y variantes (s/. , s/ , $ , soles , sol)
+        normalized = normalized
+            .replace(Regex("(?i)s\\s*/\\.?") , " ")
+            .replace(Regex("(?i)s\\s*/") , " ")
+            .replace(Regex("\\$"), " ")
+            .replace(Regex("(?i)\\$"), " ")
+            .replace(Regex("(?i)soles?"), " ")
+            .replace(Regex("(?i)pen"), " ")
+            .trim()
+
+        // Patrón tipo "12 con 50"
+        val conPattern = Pattern.compile("(\\d+)\\s+con\\s+(\\d{1,2})")
+        val conMatcher = conPattern.matcher(normalized)
+        if (conMatcher.find()) {
+            val entero = conMatcher.group(1).toDoubleOrNull()
+            val cent = conMatcher.group(2).toIntOrNull()
+            if (entero != null && cent != null) {
+                return entero + (cent / 100.0)
+            }
         }
-        
-        // Buscar números enteros
+
+        // Buscar números con separadores de miles y decimales (coma o punto)
+        // Capturar el primer número plausible
+        val numPattern = Pattern.compile("(?<![a-z0-9])([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{1,2})|[0-9]+(?:[.,][0-9]{1,2}))(?![a-z0-9])")
+        val numMatcher = numPattern.matcher(normalized)
+        if (numMatcher.find()) {
+            var candidate = numMatcher.group(1)
+            // Normalizar: si hay ambos separadores, asumir último como decimal
+            if (candidate.contains('.') && candidate.contains(',')) {
+                // Si formato es 1.234,56 => quitar puntos miles y cambiar coma por punto
+                candidate = candidate.replace(".", "").replace(",", ".")
+            } else {
+                // Si solo hay comas, tratar como decimal
+                if (candidate.contains(',')) candidate = candidate.replace(",", ".")
+            }
+            return candidate.toDoubleOrNull()
+        }
+
+        // Buscar números enteros simples
         val intPattern = Pattern.compile("(\\d+)")
         val intMatcher = intPattern.matcher(normalized)
         if (intMatcher.find()) {
             return intMatcher.group(1).toDoubleOrNull()
         }
-        
-        // Buscar números en palabras
+
+        // Buscar números en palabras básicas
         var total = 0.0
         val words = normalized.split(" ")
-        
         for (word in words) {
             val cleanWord = word.replace(Regex("[^a-záéíóúñü]"), "")
             numberWords[cleanWord]?.let { value ->
                 total += value
             }
         }
-        
         return if (total > 0) total else null
     }
 }

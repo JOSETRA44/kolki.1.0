@@ -33,6 +33,7 @@ class SettingsFragment : Fragment() {
         
         loadVoiceAutoSaveSetting()
         loadVoiceAutoSaveDelay()
+        loadVoiceMaxListen()
         loadGlobalVoiceSettings()
         setupClickListeners()
         // Hide duplicate Export in Settings (lives in Profile)
@@ -84,6 +85,11 @@ class SettingsFragment : Fragment() {
             showAutoSaveDelayDialog()
         }
 
+        // Max listen timeout picker
+        binding.voiceMaxListenLayout.setOnClickListener {
+            showMaxListenDialog()
+        }
+
         // Global accessibility enable
         binding.voiceGlobalEnableSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             // Ignore programmatic changes; only react to user presses
@@ -110,7 +116,11 @@ class SettingsFragment : Fragment() {
 
     private fun loadVoiceAutoSaveSetting() {
         val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
-        val autoSave = prefs.getBoolean("voice_auto_save", false)
+        // Establecer por defecto auto-guardar=true si no existe la preferencia
+        if (!prefs.contains("voice_auto_save")) {
+            prefs.edit().putBoolean("voice_auto_save", true).apply()
+        }
+        val autoSave = prefs.getBoolean("voice_auto_save", true)
         binding.voiceAutoSaveSwitch.isChecked = autoSave
         setVoiceAutoSaveDelayEnabled(autoSave)
     }
@@ -119,6 +129,12 @@ class SettingsFragment : Fragment() {
         val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
         val delayMs = prefs.getInt("voice_auto_save_delay_ms", 800)
         binding.voiceAutoSaveDelayValue.text = formatDelay(delayMs)
+    }
+
+    private fun loadVoiceMaxListen() {
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val timeoutMs = prefs.getInt("voice_max_listen_ms", 8000)
+        binding.voiceMaxListenValue.text = formatDelay(timeoutMs)
     }
 
     private fun showAutoSaveDelayDialog() {
@@ -134,6 +150,25 @@ class SettingsFragment : Fragment() {
                 val chosen = values[which]
                 prefs.edit().putInt("voice_auto_save_delay_ms", chosen).apply()
                 binding.voiceAutoSaveDelayValue.text = formatDelay(chosen)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showMaxListenDialog() {
+        val options = arrayOf("5.0 s", "8.0 s", "12.0 s")
+        val values = intArrayOf(5000, 8000, 12000)
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val current = prefs.getInt("voice_max_listen_ms", 8000)
+        val currentIndex = values.indexOf(current).let { if (it >= 0) it else 1 }
+
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Tiempo máx. de escucha")
+            .setSingleChoiceItems(options, currentIndex) { dialog, which ->
+                val chosen = values[which]
+                prefs.edit().putInt("voice_max_listen_ms", chosen).apply()
+                binding.voiceMaxListenValue.text = formatDelay(chosen)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)

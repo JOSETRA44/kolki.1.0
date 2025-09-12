@@ -30,6 +30,8 @@ class QuickVoiceActivity : AppCompatActivity() {
     private lateinit var parser: ExpenseVoiceParser
     private lateinit var repository: ExpenseRepository
     private val scope = CoroutineScope(Dispatchers.Main)
+    private var timeoutJob: Job? = null
+    private var lastPartialText: String? = null
 
     private val notifChannelId = "kolki_voice_channel"
     private val notifIdSaved = 3001
@@ -74,18 +76,39 @@ class QuickVoiceActivity : AppCompatActivity() {
             return
         }
 
+        // Programar tiempo máximo de escucha configurable
+        val prefs = getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val maxListenMs = prefs.getInt("voice_max_listen_ms", 8000)
+        timeoutJob?.cancel()
+        timeoutJob = scope.launch {
+            delay(maxListenMs.toLong())
+            // Si seguimos aquí, no hubo resultado a tiempo
+            try { speechRecognizer?.stopListening() } catch (_: Exception) {}
+            // Si tenemos un parcial, úsalo como resultado en lugar de abortar
+            val fallback = lastPartialText?.takeIf { it.isNotBlank() }
+            if (fallback != null) {
+                handleResult(fallback)
+            } else {
+                Toast.makeText(applicationContext, "Tiempo de escucha agotado", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+
         speechRecognizer?.startListening(object : SimpleSpeechRecognizer.SpeechCallback {
             override fun onResult(text: String) {
+                timeoutJob?.cancel()
                 handleResult(text)
             }
 
             override fun onError(error: String) {
+                timeoutJob?.cancel()
                 Toast.makeText(applicationContext, error, Toast.LENGTH_SHORT).show()
                 finish()
             }
 
             override fun onPartialResult(partialText: String) {
                 statusText.text = partialText
+                lastPartialText = partialText
             }
         })
     }
@@ -99,6 +122,10 @@ class QuickVoiceActivity : AppCompatActivity() {
         }
 
         val prefs = getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        // Asegurar por defecto auto-guardar=true si no existe
+        if (!prefs.contains("voice_auto_save")) {
+            prefs.edit().putBoolean("voice_auto_save", true).apply()
+        }
         val auto = prefs.getBoolean("voice_auto_save", true)
         val delayMs = prefs.getInt("voice_auto_save_delay_ms", 800)
 
@@ -111,8 +138,13 @@ class QuickVoiceActivity : AppCompatActivity() {
                     comment = expense.comment,
                     date = Date()
                 )
-                repository.insertExpense(toSave)
-                postNotification("Gasto guardado: ${toSave.category} - S/ ${toSave.amount}")
+                try {
+                    repository.insertExpense(toSave)
+                    Toast.makeText(applicationContext, "Gasto guardado", Toast.LENGTH_SHORT).show()
+                    postNotification("Gasto guardado: ${toSave.category} - S/ ${toSave.amount}")
+                } catch (e: Exception) {
+                    Toast.makeText(applicationContext, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             } else {
                 postNotification("Reconocido: $text")
             }
@@ -142,6 +174,7 @@ class QuickVoiceActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         try { speechRecognizer?.stopListening() } catch (_: Exception) {}
+        timeoutJob?.cancel()
         scope.cancel()
     }
 
