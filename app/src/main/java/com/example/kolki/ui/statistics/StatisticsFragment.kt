@@ -23,7 +23,10 @@ import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import java.text.NumberFormat
+import com.example.kolki.speech.ExpenseVoiceParser
 import java.text.SimpleDateFormat
+import androidx.navigation.fragment.findNavController
+import com.example.kolki.util.BudgetLog
 import java.util.*
 
 class StatisticsFragment : Fragment() {
@@ -37,12 +40,20 @@ class StatisticsFragment : Fragment() {
     
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("es", "PE"))
     private lateinit var storage: SimpleExpenseStorage
+    private val parser by lazy { ExpenseVoiceParser() }
+    private val canonicalSet = setOf(
+        "Alimentación", "Transporte", "Entretenimiento", "Salud",
+        "Compras", "Servicios", "Educación", "Vivienda", "Hogar", "Otros"
+    )
     private var pieStart: Date? = null
     private var pieEnd: Date? = null
     private var currentWeekMonday: Calendar = mondayOfWeek(Calendar.getInstance())
     private var lastPieTotals: Map<String, Double> = emptyMap()
     private var lastPieTotalSum: Double = 0.0
+    private var lastPieItemsByCat: Map<String, List<SimpleExpense>> = emptyMap()
     private var lastWeekDayCategoryMap: List<Map<String, List<SimpleExpense>>> = emptyList()
+    private var showBudgetToday: Boolean = true
+    private var showMonthOnSummary: Boolean = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,6 +62,229 @@ class StatisticsFragment : Fragment() {
     ): View {
         _binding = FragmentStatisticsBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    private fun updateSummaryCard() {
+        val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryTitleText) ?: return
+        val valueTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryValueText) ?: return
+
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+
+        if (showMonthOnSummary) {
+            // Este Mes (gasto): suma de gastos del mes actual
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+            val start = atStartOfDay(cal.time)
+            cal.set(java.util.Calendar.DAY_OF_MONTH, cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+            val end = atEndOfDay(cal.time)
+            val monthSpent = storage.getSnapshot().filter { !it.date.before(start) && !it.date.after(end) }.sumOf { it.amount }
+            val amount = kotlin.math.floor(monthSpent).toLong() // enteros para mayor impacto visual
+            titleTv.text = "Este Mes (gasto)"
+            valueTv.text = "$symbol $amount"
+            valueTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red))
+        } else {
+            // Saldo Restante (global): ingresos - gastos
+            val remaining = storage.getRemaining()
+            val amount = kotlin.math.floor(remaining).toLong()
+            titleTv.text = "Saldo Restante"
+            valueTv.text = "$symbol $amount"
+            valueTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.income_green))
+        }
+    }
+
+    private fun triggerBudgetAlert(baselinePerDay: Long, todaySpent: Double) {
+        val ctx = requireContext()
+        val prefs = ctx.getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        val over = kotlin.math.floor(todaySpent - baselinePerDay).toLong().coerceAtLeast(0L)
+
+        // Play configured sound
+        try {
+            val soundStr = prefs.getString("budget_alert_sound_uri", null)
+            val uri = if (soundStr.isNullOrBlank()) android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+            else android.net.Uri.parse(soundStr)
+            val rt = android.media.RingtoneManager.getRingtone(ctx, uri)
+            rt?.play()
+        } catch (_: Exception) {}
+
+        // Post notification
+        val nm = androidx.core.app.NotificationManagerCompat.from(ctx)
+        val channelId = "budget_alerts"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val ch = android.app.NotificationChannel(channelId, "Alertas de presupuesto", android.app.NotificationManager.IMPORTANCE_HIGH)
+            val mgr = ctx.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            mgr.createNotificationChannel(ch)
+        }
+        val title = if (todaySpent > baselinePerDay * 2) "Ha sobrepasado el doble del presupuesto diario" else "Ha sobrepasado el presupuesto diario"
+        val text = "Gastó $symbol ${String.format(java.util.Locale.getDefault(), "%.0f", todaySpent)} (diario: $symbol $baselinePerDay). El restante mensual se ajustará."
+        val notif = androidx.core.app.NotificationCompat.Builder(ctx, channelId)
+            .setSmallIcon(com.example.kolki.R.drawable.ic_expenses_24)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .build()
+        nm.notify(2001, notif)
+
+        // Log event with latest expense name if available
+        try {
+            val now = java.util.Calendar.getInstance()
+            val start = atStartOfDay(now.time)
+            val end = atEndOfDay(now.time)
+            val todayItems = storage.getSnapshot().filter { !it.date.before(start) && !it.date.after(end) }
+            val latest = todayItems.maxByOrNull { it.createdAt }
+            val name = latest?.originalCategory?.takeIf { it.isNotBlank() } ?: latest?.category ?: "gasto"
+            val amt = latest?.amount ?: over.toDouble()
+            val msg = "Tu presupuesto diario fue excedido por '$name' (-$symbol ${String.format(java.util.Locale.getDefault(), "%.0f", amt)}). El restante mensual se ajustó."
+            BudgetLog.addEvent(ctx, "overspend", msg)
+        } catch (_: Exception) {}
+    }
+
+    private fun updateBudgetHint() {
+        val budgetCard = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard) ?: return
+        val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetTitleText) ?: return
+        val hintTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetHintText) ?: return
+        val subTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetSubText) ?: return
+
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        val amount = prefs.getFloat("budget_amount", 0f).toDouble()
+        val mode = prefs.getString("budget_mode", "eom") ?: "eom"
+        val now = java.util.Calendar.getInstance()
+
+        if (amount <= 0.0) {
+            titleTv.text = "Presupuesto"
+            hintTv.text = "No tiene presupuesto suficiente"
+            subTv.text = "Toque para agregar presupuesto en Perfil"
+            return
+        }
+
+        val periodStartEnd = when (mode) {
+            "today" -> {
+                val s = atStartOfDay(now.time)
+                val e = atEndOfDay(now.time)
+                s to e
+            }
+            "custom" -> {
+                val sMs = prefs.getLong("budget_start", 0L)
+                val eMs = prefs.getLong("budget_end", 0L)
+                (java.util.Date(if (sMs > 0) sMs else now.timeInMillis) to java.util.Date(if (eMs > 0) eMs else now.timeInMillis))
+            }
+            else -> { // end of month
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+                val s = atStartOfDay(cal.time)
+                cal.set(java.util.Calendar.DAY_OF_MONTH, cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+                val e = atEndOfDay(cal.time)
+                s to e
+            }
+        }
+
+        // Days remaining for allocation (inclusive of today)
+        val daysRemaining: Int = when (mode) {
+            "today" -> 1
+            "custom" -> {
+                val todayStart = atStartOfDay(now.time)
+                val end = periodStartEnd.second
+                val diff = ((end.time - todayStart.time) / (24*60*60*1000)) + 1
+                diff.coerceAtLeast(0L).toInt()
+            }
+            else -> { // eom
+                val todayStart = atStartOfDay(now.time)
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.DAY_OF_MONTH, cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+                val e = atEndOfDay(cal.time)
+                val diff = ((e.time - todayStart.time) / (24*60*60*1000)) + 1
+                diff.coerceAtLeast(0L).toInt()
+            }
+        }
+
+        // Sum expenses within period
+        val expenses = storage.getSnapshot().filter { !it.date.before(periodStartEnd.first) && !it.date.after(periodStartEnd.second) }
+        val spent = expenses.sumOf { it.amount }
+        // Split today's spend to evaluate alerts
+        val todayStart = atStartOfDay(now.time)
+        val todayEnd = atEndOfDay(now.time)
+        val todaySpent = expenses.filter { !it.date.before(todayStart) && !it.date.after(todayEnd) }.sumOf { it.amount }
+        val spentExcludingToday = (spent - todaySpent).coerceAtLeast(0.0)
+
+        val remaining = (amount - spent).coerceAtLeast(0.0)
+
+        // Baseline per-day BEFORE today's spend
+        val baselinePerDay = if (daysRemaining > 0) kotlin.math.floor(((amount - spentExcludingToday).coerceAtLeast(0.0)) / daysRemaining).toLong() else 0L
+        // Today's remaining allowance (puede ser negativo para mostrar exceso)
+        val todaysRemainingRaw = baselinePerDay - kotlin.math.floor(todaySpent).toLong()
+        // Monthly remaining shown as entero (puede bajar por gasto de hoy)
+        val perMonth = kotlin.math.floor(remaining).toLong()
+
+        // Evaluate alert based on today's baseline allowance before spending today
+        if (mode != "today") {
+            val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+            val alertsEnabled = prefs.getBoolean("budget_alerts_enabled", true)
+            if (alertsEnabled && daysRemaining > 0) {
+                val baselinePerDayAlert = kotlin.math.floor(((amount - spentExcludingToday).coerceAtLeast(0.0)) / daysRemaining).toLong()
+                // Fire alert if exceeded and not already alerted today
+                if (todaySpent > baselinePerDayAlert.toDouble()) {
+                    val y = now.get(java.util.Calendar.YEAR)
+                    val m = now.get(java.util.Calendar.MONTH) + 1
+                    val d = now.get(java.util.Calendar.DAY_OF_MONTH)
+                    val ymd = y * 10000 + m * 100 + d
+                    val lastYmd = prefs.getInt("budget_last_alert_ymd", 0)
+                    if (ymd != lastYmd) {
+                        triggerBudgetAlert(baselinePerDayAlert, todaySpent)
+                        prefs.edit().putInt("budget_last_alert_ymd", ymd).apply()
+                    }
+                }
+            }
+        }
+
+        if (remaining <= 0.0) {
+            titleTv.text = "Presupuesto"
+            hintTv.text = "No tiene presupuesto suficiente"
+            subTv.text = "Toque para agregar presupuesto en Perfil"
+            return
+        }
+
+        if (showBudgetToday) {
+            titleTv.text = "Presupuesto (Hoy)"
+            // Mostrar cantidad; si es negativo, parpadeo rojo
+            val isNegative = todaysRemainingRaw < 0
+            val displayValue = kotlin.math.abs(todaysRemainingRaw)
+            hintTv.text = (if (isNegative) "-$symbol " else "$symbol ") + displayValue.toString()
+            try {
+                val red = androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red)
+                val green = androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.income_green)
+                hintTv.setTextColor(if (isNegative) red else green)
+                val card = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)
+                if (isNegative) {
+                    // Blink animation on text
+                    val blink = android.view.animation.AlphaAnimation(0.4f, 1f).apply {
+                        duration = 400
+                        repeatMode = android.view.animation.Animation.REVERSE
+                        repeatCount = android.view.animation.Animation.INFINITE
+                    }
+                    hintTv.startAnimation(blink)
+                    // Subtle tilt on card
+                    card?.animate()?.rotation(2f)?.setDuration(150)?.withEndAction {
+                        card.animate()?.rotation(0f)?.setDuration(150)?.start()
+                    }?.start()
+                } else {
+                    hintTv.clearAnimation()
+                    view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)?.animate()?.rotation(0f)?.setDuration(0)?.start()
+                }
+            } catch (_: Exception) {}
+            subTv.text = "Toque para ver 'este mes'"
+        } else {
+            titleTv.text = "Presupuesto (Mes)"
+            // Solo cantidad en rojo (sin texto largo)
+            hintTv.text = "$symbol $perMonth"
+            try {
+                hintTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red))
+                hintTv.clearAnimation()
+            } catch (_: Exception) {}
+            subTv.text = "Toque para ver 'hoy'"
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -65,6 +299,27 @@ class StatisticsFragment : Fragment() {
         setupPieControls()
         setupWeekNavigation()
         observeViewModel()
+
+        // Presupuesto: inicializar y toggle al tocar la tarjeta
+        view.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)?.setOnClickListener {
+            showBudgetToday = !showBudgetToday
+            updateBudgetHint()
+        }
+        updateBudgetHint()
+
+        // Summary toggle card (Este Mes / Saldo restante)
+        view.findViewById<android.view.View>(com.example.kolki.R.id.summaryToggleCard)?.setOnClickListener {
+            showMonthOnSummary = !showMonthOnSummary
+            updateSummaryCard()
+        }
+        updateSummaryCard()
+
+        // Deep Analysis: navigate to new screen
+        view.findViewById<android.view.View>(com.example.kolki.R.id.deepAnalysisButton)?.setOnClickListener {
+            try { findNavController().navigate(com.example.kolki.R.id.navigation_deep_analysis) } catch (_: Exception) {
+                android.widget.Toast.makeText(requireContext(), "No se pudo abrir Análisis Profundo", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     private fun setupRecyclerViews() {
@@ -222,12 +477,15 @@ class StatisticsFragment : Fragment() {
             binding.overLimitInfoText.visibility = View.GONE
         }
 
-        val byCat = inRange.filter { it.amount <= 100.0 }
-            .groupBy { normalizeCategoryForCharts(it.category) }
+        val filtered = inRange.filter { it.amount <= 100.0 }
+        // Save items per canonical category for detailed drilldown
+        val itemsByCat = filtered.groupBy { normalizeCategoryForCharts(it.category) }
+        val byCat = itemsByCat
             .mapValues { it.value.sumOf { e -> e.amount } }
         val total = byCat.values.sum()
         lastPieTotals = byCat
         lastPieTotalSum = total
+        lastPieItemsByCat = itemsByCat
         if (total <= 0) {
             binding.pieChart.clear()
             binding.pieChart.invalidate()
@@ -265,9 +523,50 @@ class StatisticsFragment : Fragment() {
                 val amount = lastPieTotals[cat] ?: (lastPieTotalSum * (percent / 100.0))
                 val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
                 val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+                // Drilldown: breakdown by original label (synonyms) and list expenses with comments
+                val items = lastPieItemsByCat[cat].orEmpty()
+                // Group by original label (fallback to canonical when null)
+                val byOriginal = items.groupBy { (it.originalCategory?.trim()?.ifBlank { null }) ?: it.category }
+                val breakdown = byOriginal.entries
+                    .map { (label, list) -> label to list.sumOf { it.amount } }
+                    .sortedByDescending { it.second }
+                val sb = StringBuilder()
+                sb.append("${String.format(Locale.getDefault(), "%.2f", percent)}%\n")
+                sb.append("$symbol ${String.format(Locale.getDefault(), "%.2f", amount)}\n\n")
+                if (breakdown.isNotEmpty()) {
+                    sb.append("Desglose por sinónimo:\n")
+                    breakdown.forEach { (label, tot) ->
+                        sb.append("• ")
+                        sb.append(label)
+                        sb.append(": ")
+                        sb.append(symbol)
+                        sb.append(" ")
+                        sb.append(String.format(Locale.getDefault(), "%.2f", tot))
+                        sb.append("\n")
+                    }
+                    sb.append("\n")
+                }
+                if (items.isNotEmpty()) {
+                    sb.append("Gastos:\n")
+                    items.sortedByDescending { it.amount }.forEach { itx ->
+                        sb.append("• ")
+                        val label = (itx.originalCategory?.takeIf { s -> s.isNotBlank() }) ?: itx.category
+                        sb.append(label)
+                        sb.append(" — ")
+                        sb.append(symbol)
+                        sb.append(" ")
+                        sb.append(String.format(Locale.getDefault(), "%.2f", itx.amount))
+                        val c = itx.comment?.takeIf { s -> s.isNotBlank() }
+                        if (c != null) {
+                            sb.append(" — ")
+                            sb.append(c)
+                        }
+                        sb.append("\n")
+                    }
+                }
                 android.app.AlertDialog.Builder(requireContext())
                     .setTitle(cat)
-                    .setMessage("${String.format(Locale.getDefault(), "%.2f", percent)}%\n$symbol ${String.format(Locale.getDefault(), "%.2f", amount)}")
+                    .setMessage(sb.toString())
                     .setPositiveButton("OK", null)
                     .show()
             }
@@ -426,20 +725,10 @@ class StatisticsFragment : Fragment() {
     }
 
     private fun normalizeCategoryForCharts(src: String): String {
-        val n = src.trim().lowercase(Locale.getDefault())
-        return when (n) {
-            // Servicios
-            "alquiler", "telefono", "teléfono", "luz", "agua", "internet" -> "Servicios"
-            // Transporte
-            "taxi", "uber", "cabify", "bus", "micro", "colectivo", "transporte", "transportes" -> "Transporte"
-            // Educación
-            "copias", "fotocopias", "universidad", "uni", "matrícula", "matricula", "colegio", "educacion", "educación" -> "Educación"
-            // Entretenimiento
-            "cine", "peliculas", "películas", "netflix", "spotify", "entretenimiento" -> "Entretenimiento"
-            // Medicina / Salud
-            "farmacia", "medicina", "medicinas", "salud" -> "Medicina"
-            else -> src
-        }
+        // Usa el mismo mapeo de sinónimos que el parser de voz
+        val normalized = parser.normalizeCategory(src)
+        // Asegura pertenencia al conjunto canónico; si no, agrupa en "Otros"
+        return if (normalized in canonicalSet) normalized else "Otros"
     }
 
     // Deterministic color per category (stable mapping based on name hash)
@@ -531,12 +820,13 @@ class StatisticsFragment : Fragment() {
     }
     
     private fun observeViewModel() {
-        viewModel.totalAmount.observe(viewLifecycleOwner) { total ->
-            binding.totalAmountText.text = "S/ ${String.format("%.2f", total ?: 0.0)}"
+        // When totals change, refresh the new summary card instead of old text views
+        viewModel.totalAmount.observe(viewLifecycleOwner) { _ ->
+            updateSummaryCard()
         }
         
-        viewModel.monthlyAmount.observe(viewLifecycleOwner) { amount ->
-            binding.monthlyAmountText.text = "S/ ${String.format("%.2f", amount ?: 0.0)}"
+        viewModel.monthlyAmount.observe(viewLifecycleOwner) { _ ->
+            updateSummaryCard()
         }
         
         viewModel.categoryTotals.observe(viewLifecycleOwner) { categories ->
@@ -547,14 +837,9 @@ class StatisticsFragment : Fragment() {
             recentExpensesAdapter.submitList(expenses.take(5)) // Show only 5 recent
         }
 
-        // Remaining (Saldo Restante)
-        viewModel.remaining.observe(viewLifecycleOwner) { value ->
-            val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
-            val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
-            binding.remainingValueText.text = "$symbol ${String.format(Locale.getDefault(), "%.2f", value ?: 0.0)}"
-            // Green if >= 0 else red
-            val color = if ((value ?: 0.0) >= 0) android.graphics.Color.parseColor("#2E7D32") else android.graphics.Color.RED
-            binding.remainingValueText.setTextColor(color)
+        // Remaining (Saldo Restante) -> also drives summary card
+        viewModel.remaining.observe(viewLifecycleOwner) { _ ->
+            updateSummaryCard()
         }
     }
     

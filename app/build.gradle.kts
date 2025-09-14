@@ -61,6 +61,9 @@ dependencies {
     // Vosk speech recognition (commented out for now)
     // implementation(libs.vosk.android)
     
+    // existing deps
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     

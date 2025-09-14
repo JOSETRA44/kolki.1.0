@@ -35,10 +35,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Gastos"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary_gray" />
+                        android:visibility="gone"
+                        android:text="Gastos" />
 
                     <TextView
                         android:id="@+id/remainingText"
@@ -77,6 +75,16 @@
                         android:background="@android:color/transparent"
                         android:contentDescription="Perfil"
                         app:srcCompat="@drawable/ic_person_24"
+                        app:tint="@color/accent_purple"
+                        android:padding="6dp" />
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/headerNotificationsButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Avisos"
+                        app:srcCompat="@android:drawable/ic_dialog_info"
                         app:tint="@color/accent_purple"
                         android:padding="6dp" />
                 </LinearLayout>
@@ -176,6 +184,46 @@
             </LinearLayout>
 
         </androidx.core.widget.NestedScrollView>
+
+        <!-- Advice / Notifications bubble (purple strip) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/adviceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp"
+            app:cardBackgroundColor="@color/design_default_color_primary">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="Aviso"
+                    android:tint="@android:color/white"
+                    android:src="@android:drawable/ic_dialog_info" />
+
+                <TextView
+                    android:id="@+id/adviceText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="Gastaste más que ayer" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Voice Recognition Status -->
         <com.google.android.material.card.MaterialCardView

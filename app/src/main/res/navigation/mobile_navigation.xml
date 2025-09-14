@@ -39,4 +39,10 @@
         android:name="com.example.kolki.ui.settings.SettingsFragment"
         android:label="Ajustes"
         tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/navigation_deep_analysis"
+        android:name="com.example.kolki.ui.analysis.DeepAnalysisFragment"
+        android:label="Análisis Profundo"
+        tools:layout="@layout/fragment_deep_analysis" />
 </navigation>

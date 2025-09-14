@@ -13,6 +13,8 @@ import java.util.*
 data class SimpleExpense(
     val id: Long = System.currentTimeMillis(),
     val category: String,
+    // Nombre original ingresado/ reconocido (ej: "cena"), para mostrar en la lista
+    val originalCategory: String? = null,
     val amount: Double,
     val comment: String? = null,
     val date: Date = Date(),
@@ -149,12 +151,13 @@ class SimpleExpenseStorage(context: Context) {
     fun exportCsv(): String {
         val sb = StringBuilder()
         // Header
-        sb.append("id,category,amount,comment,date,createdAt\n")
+        sb.append("id,category,originalCategory,amount,comment,date,createdAt\n")
         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
         for (e in _expenses.value) {
             val fields = listOf(
                 e.id.toString(),
                 e.category,
+                (e.originalCategory ?: ""),
                 e.amount.toString(),
                 e.comment ?: "",
                 dateFormat.format(e.date),

@@ -13,6 +13,8 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Nota: El botón de restablecer se movió al final como una opción separada -->
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -98,36 +100,65 @@
                 android:background="@android:color/darker_gray" />
 
             <!-- Auto-save delay row (legacy inline) -->
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Budget Alerts -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/budgetAlertsCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+
             <LinearLayout
-                android:id="@+id/voiceAutoSaveDelayLayout_legacy"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true"
-                android:visibility="gone">
+                android:gravity="center_vertical">
 
                 <TextView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="🔔"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:background="@android:color/holo_blue_light"
+                    android:layout_marginEnd="16dp" />
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Espera de auto-guardado"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/black" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/voiceAutoSaveDelayValue_legacy"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Alertas de presupuesto"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sonido y notificación al exceder el diario"
+                        android:textSize="14sp"
+                        android:textColor="@android:color/darker_gray" />
+
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/budgetAlertsSwitch"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0.8 s"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:layout_height="wrap_content" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
 
         <!-- Voice Max Listen Timeout -->
         <com.google.android.material.card.MaterialCardView
@@ -600,6 +631,42 @@
                     android:textSize="18sp"
                     android:textColor="@android:color/darker_gray"
                     android:layout_gravity="center_vertical" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Reset Defaults (bottom option) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Restablecer a valores predeterminados"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/resetDefaultsButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Restablecer"
+                    android:drawableStart="@android:drawable/ic_menu_revert"
+                    android:drawablePadding="8dp" />
 
             </LinearLayout>
 

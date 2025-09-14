@@ -28,6 +28,154 @@ class SettingsFragment : Fragment() {
         return binding.root
     }
 
+    private fun showManageKeysDialog() {
+        val ctx = requireContext()
+        val prefs = ctx.getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+
+        val container = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 0)
+        }
+
+        fun row(title: String, prefKey: String): View {
+            val row = android.widget.LinearLayout(ctx).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                setPadding(0, 12, 0, 12)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            val status = android.widget.ImageView(ctx).apply {
+                val has = !prefs.getString(prefKey, null).isNullOrBlank()
+                setImageResource(if (has) android.R.drawable.checkbox_on_background else android.R.drawable.checkbox_off_background)
+            }
+            val tv = android.widget.TextView(ctx).apply {
+                text = title
+                setPadding(12, 0, 0, 0)
+            }
+            val editBtn = com.google.android.material.button.MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = "Editar"
+                setOnClickListener {
+                    showSingleKeyEditDialog(title, prefKey) { showManageKeysDialog() }
+                }
+            }
+            val clearBtn = com.google.android.material.button.MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = "Borrar"
+                setOnClickListener {
+                    prefs.edit().remove(prefKey).apply()
+                    android.widget.Toast.makeText(ctx, "$title: borrada", android.widget.Toast.LENGTH_SHORT).show()
+                    showManageKeysDialog()
+                }
+            }
+            val spacer = View(ctx).apply { layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1f) }
+            row.addView(status)
+            row.addView(tv)
+            row.addView(spacer)
+            row.addView(editBtn)
+            row.addView(clearBtn)
+            return row
+        }
+
+        container.addView(android.widget.TextView(ctx).apply { text = "Gestionar mis llaves"; textSize = 18f; setPadding(0,0,0,8) })
+        container.addView(row("Análisis (Planner)", "planner_api_key"))
+        container.addView(row("ChatGPT (OpenAI)", "openai_api_key"))
+        container.addView(row("Gemini", "gemini_api_key"))
+
+        androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setView(container as View)
+            .setPositiveButton("Cerrar", null)
+            .show()
+    }
+
+    private fun showSingleKeyEditDialog(title: String, prefKey: String, onDone: () -> Unit) {
+        val ctx = requireContext()
+        val prefs = ctx.getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val til = com.google.android.material.textfield.TextInputLayout(ctx).apply {
+            endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            hint = "Pega la clave de $title"
+        }
+        val input = com.google.android.material.textfield.TextInputEditText(ctx).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setText("")
+        }
+        til.addView(input)
+
+        androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setTitle("Editar clave: $title")
+            .setView(til)
+            .setPositiveButton("Guardar") { d, _ ->
+                val raw = input.text?.toString() ?: ""
+                val key = raw.trim().replace("\\s+".toRegex(), "").replace("\"", "")
+                prefs.edit().putString(prefKey, key).apply()
+                android.widget.Toast.makeText(ctx, "$title: guardada", android.widget.Toast.LENGTH_SHORT).show()
+                d.dismiss(); onDone()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun resetToDefaults() {
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+            // Voz
+            .putBoolean("voice_auto_save", true)
+            .putInt("voice_auto_save_delay_ms", 800)
+            .putInt("voice_max_listen_ms", 8000)
+            // Accesibilidad global
+            .putBoolean("global_access_enabled", false)
+            .putInt("global_press_count", 3)
+            .putInt("global_press_window_ms", 500)
+            .putBoolean("global_debug_notify", false)
+            // Generales
+            .putString("currency_symbol", "S/")
+            .putString("export_format", "CSV")
+            // Budget alerts
+            .putBoolean("budget_alerts_enabled", true)
+            .remove("budget_alert_sound_uri")
+            .apply()
+
+        // Refrescar UI
+        loadVoiceAutoSaveSetting()
+        loadVoiceAutoSaveDelay()
+        loadVoiceMaxListen()
+        loadGlobalVoiceSettings()
+        loadCurrency()
+        loadExportFormat()
+        loadBudgetAlerts()
+        android.widget.Toast.makeText(requireContext(), "Ajustes restablecidos", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    private fun loadBudgetAlerts() {
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val enabled = prefs.getBoolean("budget_alerts_enabled", true)
+        try { binding.budgetAlertsSwitch.isChecked = enabled } catch (_: Exception) {}
+    }
+
+    private fun showAlertSoundPicker() {
+        try {
+            val intent = Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_NOTIFICATION)
+                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE, "Seleccionar sonido de alerta")
+                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+            }
+            startActivityForResult(intent, 10001)
+        } catch (_: Exception) {
+            android.widget.Toast.makeText(requireContext(), "No se pudo abrir el selector de tonos", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 10001 && resultCode == android.app.Activity.RESULT_OK && data != null) {
+            val uri: Uri? = data.getParcelableExtra(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+            if (uri != null) {
+                prefs.edit().putString("budget_alert_sound_uri", uri.toString()).apply()
+                android.widget.Toast.makeText(requireContext(), "Sonido de alerta configurado", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
@@ -40,6 +188,7 @@ class SettingsFragment : Fragment() {
         try { binding.exportDataLayout.visibility = View.GONE } catch (_: Exception) {}
         loadCurrency()
         loadExportFormat()
+        loadBudgetAlerts()
     }
     
     private fun setupClickListeners() {
@@ -50,7 +199,7 @@ class SettingsFragment : Fragment() {
         
         // App Settings
         binding.appSettingsCard.setOnClickListener {
-            // TODO: Implementar configuración general
+            showManageKeysDialog()
         }
         
         // About
@@ -62,6 +211,33 @@ class SettingsFragment : Fragment() {
         binding.exportDataLayout.setOnClickListener {
             startExport()
         }
+
+        // Reset defaults
+        binding.resetDefaultsButton.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Restablecer ajustes")
+                .setMessage("Se restablecerán los tiempos y opciones a los valores recomendados. ¿Continuar?")
+                .setPositiveButton("Restablecer") { dialog, _ ->
+                    resetToDefaults()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
+        // Budget alerts toggle
+        try {
+            binding.budgetAlertsSwitch.setOnCheckedChangeListener { _, isChecked ->
+                val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("budget_alerts_enabled", isChecked).apply()
+            }
+        } catch (_: Exception) {}
+        // Sound picker when tapping the card
+        try {
+            binding.budgetAlertsCard.setOnClickListener {
+                showAlertSoundPicker()
+            }
+        } catch (_: Exception) {}
 
         // Currency selector
         binding.currencySelectorLayout.setOnClickListener {

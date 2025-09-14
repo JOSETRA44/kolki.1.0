@@ -138,8 +138,10 @@ class QuickVoiceActivity : AppCompatActivity() {
         scope.launch {
             delay(delayMs.toLong())
             if (auto) {
+                val spokenOriginal = parser.extractOriginalCategory(text)
                 val toSave = SimpleExpense(
                     category = expense.category,
+                    originalCategory = spokenOriginal?.takeIf { it.isNotBlank() },
                     amount = expense.amount,
                     comment = expense.comment,
                     date = Date()

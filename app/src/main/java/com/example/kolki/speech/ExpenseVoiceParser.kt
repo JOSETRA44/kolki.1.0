@@ -170,8 +170,9 @@ class ExpenseVoiceParser {
                 // si no pudimos extraer monto del segundo token, seguimos al fallback general
             }
 
-            // 3) Fallback general: texto sin comas. Buscar el primer número como monto.
-            //    Ejemplos: "comida 25 menu del dia", "supermercado 45", "taxi 12.50 aeropuerto"
+            // 3) Fallback general: texto sin comas. Buscar el primer número como monto (incluye números en palabras).
+            //    Regla: la palabra SIGUIENTE al monto es la categoría (si existe y no es monto). Si no hay siguiente, usar la anterior.
+            //    El resto (excluyendo monto y categoría) es el comentario textual tal cual.
             if (words.isEmpty()) return null
 
             // Encontrar índice del primer token que contenga un número (o que combine a número por extractAmount)
@@ -196,11 +197,28 @@ class ExpenseVoiceParser {
                 amountIndex = words.indexOfFirst { it.contains(Regex("\\d")) }.let { if (it >= 0) it else 1 }
             }
 
-            val before = if (amountIndex > 0) words.subList(0, amountIndex).joinToString(" ") else ""
-            val after = if (amountIndex + 1 < words.size) words.subList(amountIndex + 1, words.size).joinToString(" ") else ""
+            // Elegir categoría desde la palabra vecina al monto
+            fun isAmountWord(token: String): Boolean {
+                val a = extractAmount(token)
+                val a2 = extractAmount(token.replace("soles", "").replace("s/", "").replace("$", ""))
+                return (a != null) || (a2 != null)
+            }
+            var catIndex: Int? = null
+            // Preferimos la palabra siguiente
+            if (amountIndex + 1 < words.size && !isAmountWord(words[amountIndex + 1])) {
+                catIndex = amountIndex + 1
+            } else if (amountIndex - 1 >= 0 && !isAmountWord(words[amountIndex - 1])) {
+                catIndex = amountIndex - 1
+            }
 
-            val category = normalizeCategory(before.ifBlank { "Otros" })
-            val comment = after.ifBlank { null }
+            val categoryWord = catIndex?.let { words[it] } ?: "Otros"
+            val category = normalizeCategory(categoryWord)
+
+            // Comentario = todas las palabras excepto la del monto y la de la categoría
+            val commentWords = words.mapIndexedNotNull { idx, w ->
+                if (idx == amountIndex || idx == catIndex) null else w
+            }
+            val comment = commentWords.joinToString(" ").trim().ifBlank { null }
 
             return SimpleExpense(
                 category = category,
@@ -225,6 +243,52 @@ class ExpenseVoiceParser {
         
         // Si no se encuentra, capitalizar la primera letra
         return categoryText.replaceFirstChar { it.uppercase() }
+    }
+
+    // Extrae el nombre original de categoría a partir del texto de voz.
+    // 1) Si hay comas: toma el primer segmento.
+    // 2) Si no: toma las palabras antes del primer número detectado.
+    fun extractOriginalCategory(voiceText: String): String? {
+        val clean = voiceText.trim()
+        if (clean.isBlank()) return null
+        val commaParts = clean.split(",").map { it.trim() }
+        if (commaParts.size >= 1 && commaParts[0].isNotBlank()) {
+            return sanitizeOriginalLabel(commaParts[0])
+        }
+        val words = clean.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (words.isEmpty()) return null
+        var amountIndex = -1
+        for (i in words.indices) {
+            val candidate = words[i]
+            val amount = extractAmount(candidate) ?: extractAmount(
+                candidate.replace("soles", "").replace("s/", "").replace("$", "")
+            )
+            if (amount != null) {
+                amountIndex = i
+                break
+            }
+        }
+        val before = if (amountIndex > 0) words.subList(0, amountIndex).joinToString(" ") else words.firstOrNull()
+        return sanitizeOriginalLabel(before ?: "")?.takeIf { it.isNotBlank() }
+    }
+
+    // Limpia la etiqueta original: quita moneda, dígitos y cualquier texto después del primer número.
+    fun sanitizeOriginalLabel(label: String?): String? {
+        if (label == null) return null
+        var s = label.trim()
+        if (s.isEmpty()) return null
+        // Cortar en el primer dígito encontrado
+        val idx = s.indexOfFirst { it.isDigit() }
+        if (idx > 0) s = s.substring(0, idx)
+        // Quitar prefijos de moneda comunes
+        s = s.replace(Regex("(?i)s\\s*/\\.?"), " ")
+            .replace(Regex("(?i)s\\s*/"), " ")
+            .replace(Regex("(?i)soles?"), " ")
+            .replace("$", " ")
+            .trim()
+        // Colapsar espacios y capitalizar primera letra
+        s = s.split(Regex("\\s+")).joinToString(" ") { it }
+        return s.ifBlank { null }
     }
     
     private fun extractAmount(amountText: String): Double? {

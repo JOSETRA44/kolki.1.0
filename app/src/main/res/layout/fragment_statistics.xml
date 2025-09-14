@@ -12,126 +12,106 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Summary Cards -->
+        <!-- Top Summary: two bold cards -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
 
+            <!-- Combined toggle: Este Mes / Saldo Restante -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/totalSpentCard"
+                android:id="@+id/summaryToggleCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardUseCompatPadding="true"
+                app:cardElevation="8dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp"
+                    android:padding="20dp"
                     android:gravity="center">
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Total Gastado"
-                        android:textSize="12sp"
-                        android:textColor="@android:color/darker_gray" />
-
-                    <TextView
-                        android:id="@+id/totalAmountText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorPrimary"
-                        tools:text="S/ 1,250.00" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/monthCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
-
-                    <TextView
+                        android:id="@+id/summaryTitleText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Este Mes"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
                         android:textColor="@android:color/darker_gray" />
 
                     <TextView
-                        android:id="@+id/monthlyAmountText"
+                        android:id="@+id/summaryValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textSize="20sp"
+                        android:layout_marginTop="6dp"
+                        android:textSize="26sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorSecondary"
-                        tools:text="S/ 450.00" />
+                        tools:text="S/ 450" />
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Budget Hint Card (moved here) -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/remainingCard"
+                android:id="@+id/budgetCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardUseCompatPadding="true"
+                app:cardElevation="8dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
+                    android:padding="20dp">
 
                     <TextView
+                        android:id="@+id/budgetTitleText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Saldo Restante"
-                        android:textSize="12sp"
+                        android:text="Presupuesto"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
                         android:textColor="@android:color/darker_gray" />
 
                     <TextView
-                        android:id="@+id/remainingValueText"
+                        android:id="@+id/budgetHintText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/expense_red"
+                        tools:text="Te queda hoy: S/ 25" />
+
+                    <TextView
+                        android:id="@+id/budgetSubText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/income_green"
-                        tools:text="S/ 800.00" />
+                        android:textSize="12sp"
+                        android:textColor="@android:color/darker_gray"
+                        tools:text="Toque para alternar entre hoy/mes" />
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
+
+        
 
         <!-- Info over-limit -->
         <TextView
@@ -280,6 +260,72 @@
                     android:layout_height="260dp" />
 
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Deep Analysis (ChatGPT placeholder) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/deepAnalysisCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:contentDescription="IA" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Análisis Profundo"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/deepAnalysisSubtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Usa IA para obtener insights de tus gastos"
+                    android:textSize="13sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/deepAnalysisButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Analizar con IA" />
+
+                <TextView
+                    android:id="@+id/deepAnalysisOutput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="13sp"
+                    android:textColor="@android:color/black"
+                    tools:text="Resumen e insights aparecerán aquí..." />
+
+            </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Period Selection -->

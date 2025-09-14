@@ -22,9 +22,14 @@ class ExpensesFragment : Fragment() {
     private lateinit var viewModel: ExpensesViewModel
     private lateinit var expensesAdapter: ExpensesAdapter
     private var allExpenses: List<com.example.kolki.data.SimpleExpense> = emptyList()
+    private var lastCount: Int = 0
     private var filterCategory: Boolean = true
     private var filterComment: Boolean = true
     private var filterDate: Boolean = true
+
+    companion object {
+        private var adviceShownThisSession = false
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,6 +38,88 @@ class ExpensesFragment : Fragment() {
     ): View {
         _binding = FragmentExpensesBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    // ===== Advice helpers =====
+    private fun buildAdviceMessage(): String {
+        if (allExpenses.isEmpty()) return ""
+        val today = java.util.Calendar.getInstance()
+        val yesterday = (today.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_MONTH, -1) }
+        fun sameDay(a: java.util.Date, cal: java.util.Calendar): Boolean {
+            val c = java.util.Calendar.getInstance().apply { time = a }
+            return c.get(java.util.Calendar.YEAR) == cal.get(java.util.Calendar.YEAR) &&
+                    c.get(java.util.Calendar.DAY_OF_YEAR) == cal.get(java.util.Calendar.DAY_OF_YEAR)
+        }
+        val todaySum = allExpenses.filter { sameDay(it.date, today) }.sumOf { it.amount }
+        val yestSum = allExpenses.filter { sameDay(it.date, yesterday) }.sumOf { it.amount }
+
+        // Record day logic (max single-day spend this month)
+        val monthCal = java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_MONTH, 1) }
+        val endMonthCal = java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_MONTH, getActualMaximum(java.util.Calendar.DAY_OF_MONTH)) }
+        fun inMonth(d: java.util.Date): Boolean {
+            val c = java.util.Calendar.getInstance().apply { time = d }
+            return c.get(java.util.Calendar.MONTH) == monthCal.get(java.util.Calendar.MONTH) &&
+                    c.get(java.util.Calendar.YEAR) == monthCal.get(java.util.Calendar.YEAR)
+        }
+        val monthExpenses = allExpenses.filter { inMonth(it.date) }
+        val byDay = monthExpenses.groupBy { val c = java.util.Calendar.getInstance().apply { time = it.date }; c.get(java.util.Calendar.DAY_OF_YEAR) }
+        val maxDayTotal = byDay.maxOfOrNull { it.value.sumOf { e -> e.amount } } ?: 0.0
+        val todayIsRecord = todaySum > 0 && todaySum >= maxDayTotal
+
+        // Top category this week
+        val weekStart = (today.clone() as java.util.Calendar).apply {
+            firstDayOfWeek = java.util.Calendar.MONDAY
+            set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+        }
+        fun inCurrentWeek(d: java.util.Date): Boolean {
+            val c = java.util.Calendar.getInstance().apply { time = d }
+            return !c.before(weekStart) && !c.after(today)
+        }
+        val weekExpenses = allExpenses.filter { inCurrentWeek(it.date) }
+        val topCat = weekExpenses.groupBy { it.category }.mapValues { it.value.sumOf { e -> e.amount } }.maxByOrNull { it.value }?.key
+
+        // Projection to month end: very rough
+        val dayOfMonth = today.get(java.util.Calendar.DAY_OF_MONTH)
+        val daysInMonth = endMonthCal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+        val spentMonth = monthExpenses.sumOf { it.amount }
+        val avgPerDay = if (dayOfMonth > 0) spentMonth / dayOfMonth else 0.0
+        val projected = avgPerDay * daysInMonth
+
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        fun money(v: Double) = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", v)}"
+
+        val parts = mutableListOf<String>()
+        if (todaySum > yestSum && yestSum > 0) parts += "Gastaste más que ayer (${money(todaySum)} vs ${money(yestSum)})."
+        if (todayIsRecord) parts += "Hoy es tu récord de gasto del mes (${money(todaySum)})."
+        if (!topCat.isNullOrBlank()) parts += "Esta semana gastaste más en ${topCat}."
+        // If projected > spentMonth by a large margin, warn
+        if (projected > spentMonth * 1.4 && projected > 0) parts += "A este paso podrías no llegar a fin de mes (proyección: ${money(projected)})."
+
+        return parts.joinToString(" ")
+    }
+
+    private fun quickAdviceForLast(): String {
+        val last = allExpenses.maxByOrNull { it.date.time } ?: return ""
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        return "Nuevo gasto agregado: ${last.category} por $symbol ${String.format(java.util.Locale.getDefault(), "%.2f", last.amount)}."
+    }
+
+    private fun showAdvice(text: String) {
+        if (!isAdded) return
+        try {
+            binding.adviceText.text = text
+            binding.adviceCard.visibility = View.VISIBLE
+            // Auto-hide based on text length (approx): base 3s + 40ms per char, capped 8s
+            val duration = (3000 + text.length * 40).coerceAtMost(8000)
+            binding.adviceCard.removeCallbacks(hideAdviceRunnable)
+            binding.adviceCard.postDelayed(hideAdviceRunnable, duration.toLong())
+        } catch (_: Exception) {}
+    }
+
+    private val hideAdviceRunnable = Runnable {
+        try { binding.adviceCard.visibility = View.GONE } catch (_: Exception) {}
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -73,6 +160,13 @@ class ExpensesFragment : Fragment() {
         // Wallet (budget) add income
         binding.headerBudgetButton.setOnClickListener {
             showAddIncomeDialog()
+        }
+
+        // Show advice once per app open
+        if (!adviceShownThisSession) {
+            adviceShownThisSession = true
+            val msg = buildAdviceMessage()
+            if (msg.isNotBlank()) showAdvice(msg)
         }
     }
     
@@ -129,12 +223,28 @@ class ExpensesFragment : Fragment() {
         binding.filterButton.setOnClickListener {
             showFilterOptionsDialog()
         }
+
+        // Bell/notifications button: show contextual advice on demand
+        binding.headerNotificationsButton.setOnClickListener {
+            val msg = buildAdviceMessage()
+            if (msg.isBlank()) {
+                android.widget.Toast.makeText(requireContext(), "Sin avisos por ahora", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                showAdvice(msg)
+            }
+        }
     }
     
     private fun observeViewModel() {
         viewModel.expenses.observe(viewLifecycleOwner) { expenses ->
             allExpenses = expenses
             applySearchAndFilters(binding.searchInput.text?.toString().orEmpty())
+            // Detect newly added expense and show a quick advice
+            if (allExpenses.size > lastCount) {
+                val msg = quickAdviceForLast()
+                if (msg.isNotBlank()) showAdvice(msg)
+            }
+            lastCount = allExpenses.size
             
             // Show/hide empty state
             if (allExpenses.isEmpty()) {

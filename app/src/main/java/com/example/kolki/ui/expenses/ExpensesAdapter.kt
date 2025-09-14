@@ -34,7 +34,8 @@ class ExpensesAdapter(
     inner class ExpenseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(expense: SimpleExpense) {
-            itemView.findViewById<TextView>(R.id.categoryText).text = expense.category
+            val displayCategory = (expense.originalCategory?.takeIf { it.isNotBlank() }) ?: expense.category
+            itemView.findViewById<TextView>(R.id.categoryText).text = displayCategory
             itemView.findViewById<TextView>(R.id.commentText).text = expense.comment ?: ""
             
             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())

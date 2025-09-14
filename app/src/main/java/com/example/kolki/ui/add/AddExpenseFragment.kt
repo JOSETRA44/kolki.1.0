@@ -138,6 +138,7 @@ class AddExpenseFragment : Fragment() {
 
         val expense = SimpleExpense(
             category = finalCategory,
+            originalCategory = rawCategory.takeIf { it.isNotBlank() },
             amount = amount,
             comment = comment.takeIf { it.isNotBlank() },
             date = Date()
