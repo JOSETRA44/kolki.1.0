@@ -32,6 +32,8 @@ class QuickVoiceActivity : AppCompatActivity() {
     private val scope = CoroutineScope(Dispatchers.Main)
     private var timeoutJob: Job? = null
     private var lastPartialText: String? = null
+    private var isHandlingResult: Boolean = false
+    private var suppressError: Boolean = false
 
     private val notifChannelId = "kolki_voice_channel"
     private val notifIdSaved = 3001
@@ -83,10 +85,12 @@ class QuickVoiceActivity : AppCompatActivity() {
         timeoutJob = scope.launch {
             delay(maxListenMs.toLong())
             // Si seguimos aquí, no hubo resultado a tiempo
+            suppressError = true
             try { speechRecognizer?.stopListening() } catch (_: Exception) {}
             // Si tenemos un parcial, úsalo como resultado en lugar de abortar
             val fallback = lastPartialText?.takeIf { it.isNotBlank() }
             if (fallback != null) {
+                isHandlingResult = true
                 handleResult(fallback)
             } else {
                 Toast.makeText(applicationContext, "Tiempo de escucha agotado", Toast.LENGTH_SHORT).show()
@@ -97,10 +101,12 @@ class QuickVoiceActivity : AppCompatActivity() {
         speechRecognizer?.startListening(object : SimpleSpeechRecognizer.SpeechCallback {
             override fun onResult(text: String) {
                 timeoutJob?.cancel()
+                isHandlingResult = true
                 handleResult(text)
             }
 
             override fun onError(error: String) {
+                if (suppressError || isHandlingResult) return
                 timeoutJob?.cancel()
                 Toast.makeText(applicationContext, error, Toast.LENGTH_SHORT).show()
                 finish()

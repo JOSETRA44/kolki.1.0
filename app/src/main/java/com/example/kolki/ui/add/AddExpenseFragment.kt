@@ -63,12 +63,10 @@ class AddExpenseFragment : Fragment() {
     }
     
     private fun setupCategoryDropdown() {
+        // Lista reducida y canónica de categorías
         val categories = arrayOf(
-            "Comida", "Transporte", "Entretenimiento", "Salud", 
-            "Compras", "Servicios", "Educación", "Otros",
-            "Restaurante", "Supermercado", "Gasolina", "Taxi", "Uber",
-            "Cine", "Medicina", "Doctor", "Farmacia", "Ropa", 
-            "Luz", "Agua", "Internet", "Teléfono", "Universidad"
+            "Alimentación", "Transporte", "Entretenimiento", "Salud",
+            "Compras", "Servicios", "Educación", "Vivienda", "Hogar", "Otros"
         )
         
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
@@ -110,11 +108,11 @@ class AddExpenseFragment : Fragment() {
     }
     
     private fun addExpense() {
-        val category = binding.categoryInput.text.toString().trim()
+        val rawCategory = binding.categoryInput.text.toString().trim()
         val amountText = binding.amountInput.text.toString().trim()
         val comment = binding.commentInput.text.toString().trim()
         
-        if (category.isEmpty()) {
+        if (rawCategory.isEmpty()) {
             binding.categoryInputLayout.error = "Ingrese la categoría"
             return
         }
@@ -130,8 +128,16 @@ class AddExpenseFragment : Fragment() {
             return
         }
 
+        // Normalizar categoría usando sinónimos y reducir al set canónico
+        val normalized = voiceParser.normalizeCategory(rawCategory)
+        val canonicalSet = setOf(
+            "Alimentación", "Transporte", "Entretenimiento", "Salud",
+            "Compras", "Servicios", "Educación", "Vivienda", "Hogar", "Otros"
+        )
+        val finalCategory = if (normalized in canonicalSet) normalized else "Otros"
+
         val expense = SimpleExpense(
-            category = category,
+            category = finalCategory,
             amount = amount,
             comment = comment.takeIf { it.isNotBlank() },
             date = Date()

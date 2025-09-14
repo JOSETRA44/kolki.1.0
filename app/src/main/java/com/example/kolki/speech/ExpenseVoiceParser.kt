@@ -213,7 +213,7 @@ class ExpenseVoiceParser {
         }
     }
     
-    private fun normalizeCategory(categoryText: String): String {
+    fun normalizeCategory(categoryText: String): String {
         val normalized = categoryText.lowercase().trim()
         
         // Buscar en categorías comunes
