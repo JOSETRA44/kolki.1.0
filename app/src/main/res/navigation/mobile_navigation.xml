@@ -35,10 +35,22 @@
         tools:layout="@layout/fragment_profile" />
 
     <fragment
+        android:id="@+id/navigation_manage_budgets"
+        android:name="com.example.kolki.ui.budget.ManageBudgetsFragment"
+        android:label="Administrar Presupuestos"
+        tools:layout="@layout/fragment_manage_budgets" />
+
+    <fragment
         android:id="@+id/navigation_settings"
         android:name="com.example.kolki.ui.settings.SettingsFragment"
         android:label="Ajustes"
         tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/navigation_about_kolki"
+        android:name="com.example.kolki.ui.settings.AboutKolkiFragment"
+        android:label="Acerca de Kolki"
+        tools:layout="@layout/fragment_about_kolki" />
 
     <fragment
         android:id="@+id/navigation_deep_analysis"

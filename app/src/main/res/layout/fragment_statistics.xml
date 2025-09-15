@@ -16,16 +16,15 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical"
+            android:layout_marginBottom="8dp">
 
             <!-- Combined toggle: Este Mes / Saldo Restante -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/summaryToggleCard"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="8dp"
                 app:cardCornerRadius="16dp"
                 app:cardUseCompatPadding="true"
                 app:cardElevation="8dp">
@@ -33,25 +32,25 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp"
-                    android:gravity="center">
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:id="@+id/summaryTitleText"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="Este Mes"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/summaryValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textSize="26sp"
+                        android:textSize="22sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorSecondary"
                         tools:text="S/ 450" />
@@ -60,13 +59,13 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+        
+
             <!-- Budget Hint Card (moved here) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/budgetCard"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
                 app:cardCornerRadius="16dp"
                 app:cardUseCompatPadding="true"
                 app:cardElevation="8dp">
@@ -74,36 +73,28 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:id="@+id/budgetTitleText"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Presupuesto"
+                        android:layout_weight="1"
+                        android:text="lo que te queda"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/budgetHintText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textSize="26sp"
+                        android:textSize="22sp"
                         android:textStyle="bold"
                         android:textColor="@color/expense_red"
-                        tools:text="Te queda hoy: S/ 25" />
-
-                    <TextView
-                        android:id="@+id/budgetSubText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textSize="12sp"
-                        android:textColor="@android:color/darker_gray"
-                        tools:text="Toque para alternar entre hoy/mes" />
+                        tools:text="S/ 25" />
 
                 </LinearLayout>
 
@@ -111,7 +102,65 @@
 
         </LinearLayout>
 
-        
+        <!-- Visualization Toggle (Circular / Barras / Simple) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/vizToggleGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/vizPieButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Circular"
+                        app:icon="@android:drawable/btn_star_big_on"
+                        app:iconPadding="6dp"
+                        app:iconGravity="textStart"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/vizBarButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Barras"
+                        app:icon="@android:drawable/ic_menu_sort_by_size"
+                        app:iconPadding="6dp"
+                        app:iconGravity="textStart"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/vizListButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Simple"
+                        app:icon="@android:drawable/ic_menu_agenda"
+                        app:iconPadding="6dp"
+                        app:iconGravity="textStart"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Info over-limit -->
         <TextView
@@ -119,13 +168,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@android:color/holo_red_dark"
+            android:textColor="@color/expense_red"
             android:textSize="14sp"
             android:visibility="gone"
             tools:text="alquiler gastó S/ 250.00" />
 
         <!-- Pie Chart: Distribución por Categoría -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/pieCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -188,7 +238,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="--/--/---- - --/--/----"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/piePickRangeButton"
@@ -209,6 +259,7 @@
 
         <!-- Stacked Bar Chart: Gastos por Semana -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/barCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -234,7 +285,8 @@
                         android:layout_height="36dp"
                         android:background="@android:color/transparent"
                         android:contentDescription="Semana anterior"
-                        app:srcCompat="@drawable/ic_arrow_back_24" />
+                        app:srcCompat="@drawable/ic_arrow_back_24"
+                        app:tint="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/weekRangeLabel"
@@ -251,7 +303,8 @@
                         android:layout_height="36dp"
                         android:background="@android:color/transparent"
                         android:contentDescription="Semana siguiente"
-                        app:srcCompat="@drawable/ic_arrow_forward_24" />
+                        app:srcCompat="@drawable/ic_arrow_forward_24"
+                        app:tint="?attr/colorOnSurface" />
                 </LinearLayout>
 
                 <com.github.mikephil.charting.charts.BarChart
@@ -260,6 +313,81 @@
                     android:layout_height="260dp" />
 
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+
+        
+
+        <!-- Categories by Amount -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/categoriesCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Period controls moved here to live with the Simple stats list -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/periodToggleGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/weekButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Semana"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/monthButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Mes"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/periodRangeButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=".."
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Gastos por Categoría"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/categoriesRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_category_stat" />
+
+            </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Deep Analysis (ChatGPT placeholder) -->
@@ -323,94 +451,6 @@
                     android:textSize="13sp"
                     android:textColor="@android:color/black"
                     tools:text="Resumen e insights aparecerán aquí..." />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Period Selection -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Período:"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginEnd="16dp" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/periodToggleGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/weekButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Semana"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/monthButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mes"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/yearButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Año"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Categories by Amount -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Gastos por Categoría"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/categoriesRecyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    tools:listitem="@layout/item_category_stat" />
 
             </LinearLayout>
 

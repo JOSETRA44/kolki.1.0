@@ -64,6 +64,46 @@ class StatisticsFragment : Fragment() {
         return binding.root
     }
 
+    private fun setupVisualizationToggle() {
+        // Default: show Circular (pie)
+        binding.vizPieButton.isChecked = true
+        updateVisualizationCards(Mode.PIE)
+
+        binding.vizToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            when (checkedId) {
+                binding.vizPieButton.id -> updateVisualizationCards(Mode.PIE)
+                binding.vizBarButton.id -> updateVisualizationCards(Mode.BAR)
+                binding.vizListButton.id -> updateVisualizationCards(Mode.LIST)
+            }
+        }
+    }
+
+    private enum class Mode { PIE, BAR, LIST }
+
+    private fun updateVisualizationCards(mode: Mode) {
+        val pieCard = view?.findViewById<View>(com.example.kolki.R.id.pieCard)
+        val barCard = view?.findViewById<View>(com.example.kolki.R.id.barCard)
+        val listCard = view?.findViewById<View>(com.example.kolki.R.id.categoriesCard)
+        when (mode) {
+            Mode.PIE -> {
+                pieCard?.visibility = View.VISIBLE
+                barCard?.visibility = View.GONE
+                listCard?.visibility = View.GONE
+            }
+            Mode.BAR -> {
+                pieCard?.visibility = View.GONE
+                barCard?.visibility = View.VISIBLE
+                listCard?.visibility = View.GONE
+            }
+            Mode.LIST -> {
+                pieCard?.visibility = View.GONE
+                barCard?.visibility = View.GONE
+                listCard?.visibility = View.VISIBLE
+            }
+        }
+    }
+
     private fun updateSummaryCard() {
         val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryTitleText) ?: return
         val valueTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryValueText) ?: return
@@ -145,7 +185,6 @@ class StatisticsFragment : Fragment() {
         val budgetCard = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard) ?: return
         val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetTitleText) ?: return
         val hintTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetHintText) ?: return
-        val subTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetSubText) ?: return
 
         val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
@@ -156,7 +195,6 @@ class StatisticsFragment : Fragment() {
         if (amount <= 0.0) {
             titleTv.text = "Presupuesto"
             hintTv.text = "No tiene presupuesto suficiente"
-            subTv.text = "Toque para agregar presupuesto en Perfil"
             return
         }
 
@@ -242,7 +280,6 @@ class StatisticsFragment : Fragment() {
         if (remaining <= 0.0) {
             titleTv.text = "Presupuesto"
             hintTv.text = "No tiene presupuesto suficiente"
-            subTv.text = "Toque para agregar presupuesto en Perfil"
             return
         }
 
@@ -274,7 +311,6 @@ class StatisticsFragment : Fragment() {
                     view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)?.animate()?.rotation(0f)?.setDuration(0)?.start()
                 }
             } catch (_: Exception) {}
-            subTv.text = "Toque para ver 'este mes'"
         } else {
             titleTv.text = "Presupuesto (Mes)"
             // Solo cantidad en rojo (sin texto largo)
@@ -283,7 +319,6 @@ class StatisticsFragment : Fragment() {
                 hintTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red))
                 hintTv.clearAnimation()
             } catch (_: Exception) {}
-            subTv.text = "Toque para ver 'hoy'"
         }
     }
 
@@ -298,6 +333,7 @@ class StatisticsFragment : Fragment() {
         setupCharts()
         setupPieControls()
         setupWeekNavigation()
+        setupVisualizationToggle()
         observeViewModel()
 
         // Presupuesto: inicializar y toggle al tocar la tarjeta
@@ -353,23 +389,31 @@ class StatisticsFragment : Fragment() {
         chart.description.isEnabled = false
         chart.isDrawHoleEnabled = true
         chart.setUsePercentValues(true)
-        chart.setEntryLabelColor(android.graphics.Color.DKGRAY)
+        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        chart.setEntryLabelColor(if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY)
         chart.centerText = "Categorías"
         chart.setNoDataText("Sin datos para mostrar")
+        chart.setNoDataTextColor(if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY)
         chart.legend.isEnabled = true
+        chart.legend.textColor = if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
     }
 
     private fun setupBarChart(chart: BarChart) {
         chart.description.isEnabled = false
         chart.setNoDataText("Sin datos para mostrar")
+        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        chart.setNoDataTextColor(if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY)
         chart.axisRight.isEnabled = false
         chart.axisLeft.granularity = 1f
         chart.axisLeft.axisMinimum = 0f
+        chart.axisLeft.textColor = if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
         val x = chart.xAxis
         x.position = XAxis.XAxisPosition.BOTTOM
         x.granularity = 1f
         x.setDrawGridLines(false)
+        x.textColor = if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
         chart.legend.isEnabled = true
+        chart.legend.textColor = if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
     }
 
     private fun setupPieControls() {
@@ -434,6 +478,17 @@ class StatisticsFragment : Fragment() {
         binding.pieRangeContainer.visibility = View.VISIBLE
     }
 
+    private fun selectPieThisYear() {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.DAY_OF_YEAR, 1)
+        pieStart = atStartOfDay(cal.time)
+        cal.set(Calendar.MONTH, Calendar.DECEMBER)
+        cal.set(Calendar.DAY_OF_MONTH, 31)
+        pieEnd = atEndOfDay(cal.time)
+        binding.pieRangeContainer.visibility = View.GONE
+        renderPie()
+    }
+
     private fun pickPieDateRange() {
         val cal = Calendar.getInstance()
         val year = cal.get(Calendar.YEAR)
@@ -452,7 +507,38 @@ class StatisticsFragment : Fragment() {
                 e.set(Calendar.MILLISECOND, 999)
                 pieEnd = e.time
                 val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                binding.pieRangeLabel.text = "${fmt.format(pieStart)} - ${fmt.format(pieEnd)}"
+                val sDate = pieStart
+                val eDate = pieEnd
+                if (sDate != null && eDate != null) {
+                    binding.pieRangeLabel.text = "${fmt.format(sDate)} - ${fmt.format(eDate)}"
+                }
+                renderPie()
+            }, year, month, day).show()
+        }, year, month, day).show()
+    }
+
+    private fun pickPeriodRange() {
+        val cal = Calendar.getInstance()
+        val year = cal.get(Calendar.YEAR)
+        val month = cal.get(Calendar.MONTH)
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        DatePickerDialog(requireContext(), { _, y, m, d ->
+            val s = Calendar.getInstance()
+            s.set(y, m, d, 0, 0, 0)
+            s.set(Calendar.MILLISECOND, 0)
+            val start = s.time
+            DatePickerDialog(requireContext(), { _, y2, m2, d2 ->
+                val e = Calendar.getInstance()
+                e.set(y2, m2, d2, 23, 59, 59)
+                e.set(Calendar.MILLISECOND, 999)
+                val end = e.time
+                viewModel.setCustomRange(start, end)
+                // Also sync pie to same range
+                binding.pieRangeButton.isChecked = true
+                pieStart = start
+                pieEnd = end
+                val fmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                binding.pieRangeLabel.text = "${fmt.format(start)} - ${fmt.format(end)}"
                 renderPie()
             }, year, month, day).show()
         }, year, month, day).show()
@@ -497,7 +583,8 @@ class StatisticsFragment : Fragment() {
         }
         val dataSet = PieDataSet(entries, "Porcentaje").apply {
             colors = categoryColors(byCat.keys)
-            valueTextColor = android.graphics.Color.DKGRAY
+            val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            valueTextColor = if (isNight) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
             valueTextSize = 12f
             sliceSpace = 2f
         }
@@ -511,6 +598,8 @@ class StatisticsFragment : Fragment() {
         binding.pieChart.legend.verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
         binding.pieChart.legend.orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
         binding.pieChart.legend.textSize = 10f
+        val isNightLegend = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        binding.pieChart.legend.textColor = if (isNightLegend) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
         binding.pieChart.setExtraOffsets(8f, 8f, 8f, 16f)
         binding.pieChart.invalidate()
 
@@ -655,6 +744,8 @@ class StatisticsFragment : Fragment() {
         binding.barChart.legend.verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
         binding.barChart.legend.orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
         binding.barChart.legend.textSize = 10f
+        val isNightLegend = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        binding.barChart.legend.textColor = if (isNightLegend) android.graphics.Color.WHITE else android.graphics.Color.DKGRAY
         binding.barChart.setExtraOffsets(8f, 8f, 8f, 16f)
         binding.barChart.invalidate()
 
@@ -809,7 +900,11 @@ class StatisticsFragment : Fragment() {
                 when (checkedId) {
                     binding.weekButton.id -> viewModel.setPeriod(StatisticsViewModel.Period.WEEK)
                     binding.monthButton.id -> viewModel.setPeriod(StatisticsViewModel.Period.MONTH)
-                    binding.yearButton.id -> viewModel.setPeriod(StatisticsViewModel.Period.YEAR)
+                    binding.periodRangeButton.id -> {
+                        // Select RANGE and prompt for dates
+                        viewModel.setPeriod(StatisticsViewModel.Period.RANGE)
+                        pickPeriodRange()
+                    }
                 }
             }
         }
@@ -817,6 +912,42 @@ class StatisticsFragment : Fragment() {
         // Set default selection
         binding.monthButton.isChecked = true
         viewModel.setPeriod(StatisticsViewModel.Period.MONTH)
+
+        // Sync pie (gastos por categoría) with main period selection
+        viewModel.selectedPeriod.observe(viewLifecycleOwner) { p: StatisticsViewModel.Period ->
+            when (p) {
+                StatisticsViewModel.Period.WEEK -> {
+                    binding.pieWeekButton.isChecked = true
+                    selectPieThisWeek()
+                }
+                StatisticsViewModel.Period.MONTH -> {
+                    binding.pieMonthButton.isChecked = true
+                    selectPieThisMonth()
+                }
+                StatisticsViewModel.Period.RANGE -> {
+                    selectPieRange()
+                    // If range already chosen, render
+                    viewModel.customRange.value?.let { (s, e) ->
+                        pieStart = s
+                        pieEnd = e
+                        val fmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                        binding.pieRangeLabel.text = "${fmt.format(s)} - ${fmt.format(e)}"
+                        renderPie()
+                    }
+                }
+            }
+        }
+
+        // Also react to changes in custom range to update pie when RANGE is active
+        viewModel.customRange.observe(viewLifecycleOwner) { range ->
+            if (viewModel.selectedPeriod.value == StatisticsViewModel.Period.RANGE && range != null) {
+                pieStart = range.first
+                pieEnd = range.second
+                val fmt = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                binding.pieRangeLabel.text = "${fmt.format(range.first)} - ${fmt.format(range.second)}"
+                renderPie()
+            }
+        }
     }
     
     private fun observeViewModel() {

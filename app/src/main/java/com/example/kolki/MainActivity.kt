@@ -69,6 +69,8 @@ class MainActivity : AppCompatActivity() {
             
             // Request necessary permissions
             requestPermissions()
+
+            // FAB removed: center bottom navigation '+' handles add action
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error in onCreate: ${e.message}", e)
             finish()

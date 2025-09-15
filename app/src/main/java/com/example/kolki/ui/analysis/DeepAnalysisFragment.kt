@@ -138,6 +138,10 @@ class DeepAnalysisFragment : Fragment() {
             "\"categories\": [\"...\"], " +
             "\"includeNotes\": true, " +
             "\"types\": [\"gasto\", \"ingreso\"], " +
+            "\"includeBudget\": true, " +
+            "\"includeIncomes\": true, " +
+            "\"budgetFields\": [\"monthlyAmount\", \"mode\", \"remaining\", \"dailyAllowance\"], " +
+            "\"incomeFields\": [\"emitter\", \"amount\", \"date\"], " +
             "\"topN\": 100" +
             "}.\n" +
             "Pregunta del usuario: " + question
@@ -275,19 +279,91 @@ class DeepAnalysisFragment : Fragment() {
             }
             sb.append('\n')
         }
+
+        // Append budget summary if requested
+        val includeBudget = req.optBoolean("includeBudget", true)
+        if (includeBudget) {
+            val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+            val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+            val amountMonthly = prefs.getFloat("budget_amount", 0f).toDouble()
+            val mode = prefs.getString("budget_mode", "eom") ?: "eom"
+            val customStart = prefs.getLong("budget_start", 0L)
+            val customEnd = prefs.getLong("budget_end", 0L)
+
+            // Determine active budget period [periodStart, periodEnd]
+            val periodStart: Date
+            val periodEnd: Date
+            when (mode) {
+                "today" -> {
+                    val now = Calendar.getInstance().time
+                    periodStart = atStartOfDay(now)
+                    periodEnd = atEndOfDay(now)
+                }
+                "custom" -> {
+                    val s = if (customStart > 0) Date(customStart) else Calendar.getInstance().time
+                    val e = if (customEnd > 0) Date(customEnd) else Calendar.getInstance().time
+                    periodStart = atStartOfDay(s)
+                    periodEnd = atEndOfDay(e)
+                }
+                else -> { // end of month default
+                    val c1 = Calendar.getInstance(); c1.set(Calendar.DAY_OF_MONTH, 1)
+                    periodStart = atStartOfDay(c1.time)
+                    val c2 = Calendar.getInstance(); c2.set(Calendar.DAY_OF_MONTH, c2.getActualMaximum(Calendar.DAY_OF_MONTH))
+                    periodEnd = atEndOfDay(c2.time)
+                }
+            }
+
+            val inPeriodSpent = data.filter { !it.date.before(periodStart) && !it.date.after(periodEnd) }.sumOf { it.amount }
+            val remainingPeriod = (amountMonthly - inPeriodSpent).coerceAtLeast(0.0)
+            val todayStart = atStartOfDay(Calendar.getInstance().time)
+            val todayEnd = atEndOfDay(Calendar.getInstance().time)
+            val todaySpent = data.filter { !it.date.before(todayStart) && !it.date.after(todayEnd) }.sumOf { it.amount }
+            val daysRemainingPeriod = ((periodEnd.time - todayStart.time) / (24*60*60*1000L) + 1).coerceAtLeast(0)
+            val dailyAllowancePeriod = if (daysRemainingPeriod > 0) kotlin.math.floor((remainingPeriod / daysRemainingPeriod)).toLong() else 0L
+            val remainingToday = kotlin.math.max(0.0, dailyAllowancePeriod.toDouble() - todaySpent)
+
+            sb.append("\nPresupuesto:\n")
+            sb.append("• monto_periodo=${symbol} ${String.format(Locale.getDefault(), "%.0f", kotlin.math.floor(amountMonthly))}; modo=${mode}\n")
+            sb.append("• periodo_inicio=${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(periodStart)}; periodo_fin=${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(periodEnd)}\n")
+            sb.append("• gastado_periodo=${symbol} ${String.format(Locale.getDefault(), "%.2f", inPeriodSpent)}; restante_periodo=${symbol} ${String.format(Locale.getDefault(), "%.2f", remainingPeriod)}\n")
+            sb.append("• dias_restantes_periodo=${daysRemainingPeriod}; permitido_diario_periodo=${symbol} ${dailyAllowancePeriod}\n")
+            sb.append("• hoy_gastado=${symbol} ${String.format(Locale.getDefault(), "%.2f", todaySpent)}; restante_hoy_periodo=${symbol} ${String.format(Locale.getDefault(), "%.2f", remainingToday)}\n")
+        }
+
+        // Append incomes if requested
+        val includeIncomes = req.optBoolean("includeIncomes", true)
+        if (includeIncomes) {
+            val incomes = storage.getIncomeSnapshot()
+            if (incomes.isNotEmpty()) {
+                sb.append("\nIngresos:\n")
+                incomes.sortedBy { it.date }.take(200).forEachIndexed { idx, i ->
+                    val d = try { sdf.format(i.date) } catch (_: Exception) { "" }
+                    sb.append("${idx + 1}. fecha=${d}; emisor=${i.emitter}; monto=${String.format(Locale.getDefault(), "%.2f", i.amount)}\n")
+                }
+            }
+        }
+
         return sb.toString()
     }
 
     private fun buildFinalAnswerPrompt(question: String, localPayload: String): String {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        return "Eres un analista financiero. Responde en español de forma clara para el cliente.\n" +
-                "Fecha actual: " + today + "\n" +
-                "Datos locales relevantes (filtrados):\n" + localPayload + "\n" +
-                "Tareas:\n" +
-                "1) Calcula totales, conteos y, si aplica, desglose por categoría/fecha.\n" +
-                "2) Responde a la pregunta con números concretos y breve explicación.\n" +
-                "3) No inventes datos fuera de 'Datos locales'.\n" +
-                "Pregunta del usuario: " + question
+        return (
+            "Eres un analista financiero. Responde en español de forma clara para el cliente.\n" +
+            "Fecha actual: " + today + "\n" +
+            "Datos locales relevantes (filtrados):\n" + localPayload + "\n" +
+            "Si se proporciona un campo 'Usuario:', inicia tu respuesta saludando por su nombre.\n" +
+            "Reglas IMPORTANTES (usa exactamente estas definiciones si están presentes en Datos locales):\n" +
+            "- Presupuesto mensual (budget_amount). Gastado mes (gastado_mes). Restante mes (restante_mes).\n" +
+            "- Días restantes del mes (dias_restantes). Permitido diario (permitido_diario) = floor(restante_mes / dias_restantes).\n" +
+            "- Hoy gastado (hoy_gastado). Restante hoy (restante_hoy) = max(0, permitido_diario - hoy_gastado).\n" +
+            "- PRIORIDAD: si hay campos de presupuesto y hoy en 'Datos locales', utiliza esos valores DIRECTAMENTE. No inventes ni uses el saldo general.\n" +
+            "Tareas:\n" +
+            "1) Calcula totales y desglose solo a partir de 'Datos locales'.\n" +
+            "2) Responde a la pregunta con números concretos y breve explicación.\n" +
+            "3) No inventes datos fuera de 'Datos locales'.\n" +
+            "Pregunta del usuario: " + question
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -311,6 +387,12 @@ class DeepAnalysisFragment : Fragment() {
         val providerGemini = view.findViewById<com.google.android.material.chip.Chip>(R.id.providerGemini)
         val providerLocal = view.findViewById<com.google.android.material.chip.Chip>(R.id.providerLocal)
         val attachContextBtn = view.findViewById<View>(R.id.attachContextButton)
+
+        // Mark deep analysis as used (for advice system)
+        try {
+            requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+                .edit().putBoolean("used_deep_analysis", true).apply()
+        } catch (_: Exception) {}
 
         // Setup chat list
         chatAdapter = ChatAdapter()
@@ -502,6 +584,7 @@ class DeepAnalysisFragment : Fragment() {
     private fun buildLocalContext(): String {
         val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        val userName = prefs.getString("user_name", null)
         val data = storage.getSnapshot()
         if (data.isEmpty()) return "Sin datos locales"
         val now = Calendar.getInstance()
@@ -515,9 +598,23 @@ class DeepAnalysisFragment : Fragment() {
         val lines = topCats.joinToString("\n") { e -> "• ${e.key}: $symbol ${String.format(Locale.getDefault(), "%.2f", e.value)}" }
         val budgetAmount = prefs.getFloat("budget_amount", 0f).toDouble()
         val mode = prefs.getString("budget_mode", "eom") ?: "eom"
+        // Today block for consistency with Statistics
+        val todayStart = atStartOfDay(Calendar.getInstance().time)
+        val todayEnd = atEndOfDay(Calendar.getInstance().time)
+        val todaySpent = data.filter { !it.date.before(todayStart) && !it.date.after(todayEnd) }.sumOf { it.amount }
+        val daysRemaining = ((monthEnd.time - todayStart.time) / (24*60*60*1000L) + 1).coerceAtLeast(0)
+        val remainingMonth = (budgetAmount - monthSpent).coerceAtLeast(0.0)
+        val dailyAllowance = if (daysRemaining > 0) kotlin.math.floor((remainingMonth / daysRemaining)).toLong() else 0L
+        val remainingToday = kotlin.math.max(0.0, dailyAllowance.toDouble() - todaySpent)
         return buildString {
+            if (!userName.isNullOrBlank()) {
+                append("Usuario: ${userName}\n")
+            }
             append("Mes actual gastado: $symbol ${String.format(Locale.getDefault(), "%.2f", monthSpent)}\n")
             if (budgetAmount > 0) append("Presupuesto definido: $symbol ${String.format(Locale.getDefault(), "%.0f", kotlin.math.floor(budgetAmount))} (modo: $mode)\n")
+            if (budgetAmount > 0) {
+                append("Permitido diario: $symbol ${dailyAllowance}; Hoy gastado: $symbol ${String.format(Locale.getDefault(), "%.2f", todaySpent)}; Restante hoy: $symbol ${String.format(Locale.getDefault(), "%.2f", remainingToday)}\n")
+            }
             if (lines.isNotBlank()) {
                 append("Top categorías este mes:\n")
                 append(lines)
@@ -551,10 +648,89 @@ class DeepAnalysisFragment : Fragment() {
     private fun answerQuick(q: String): String? {
         val text = q.lowercase(Locale.getDefault())
         return when {
+            // Budget quick answers
+            text.contains("presupuesto") && (text.contains("diario") || text.contains("día") || text.contains("dia")) -> quickDailyBudget()
+            text.contains("presupuesto") && (text.contains("restante") || text.contains("queda") || text.contains("quedan")) -> quickBudgetRemaining()
+            text.contains("presupuesto") -> quickBudgetSummary()
+            // Income/emitter quick answers (who is emitter, totals by emitter)
+            (text.contains("emisor") || text.contains("quién da") || text.contains("quien da") || text.contains("quien es el emisor")) -> quickIncomeEmitters()
             text.contains("día gast") || text.contains("dia gast") || text.contains("qué día gast") -> topSpendingDay()
             text.contains("horas gast") || text.contains("hora gast") -> topSpendingHours()
             text.contains("categoría más alta") || text.contains("categoria mas alta") -> topCategoryThisMonth()
             else -> null
+        }
+    }
+
+    private data class BudgetInfo(
+        val symbol: String,
+        val monthlyAmount: Double,
+        val monthSpent: Double,
+        val remaining: Double,
+        val daysRemaining: Int,
+        val dailyAllowance: Long,
+        val mode: String
+    )
+
+    private fun getBudgetInfo(): BudgetInfo? {
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+        val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
+        val amountMonthly = prefs.getFloat("budget_amount", 0f).toDouble()
+        if (amountMonthly <= 0.0) return null
+        val mode = prefs.getString("budget_mode", "eom") ?: "eom"
+        val data = storage.getSnapshot()
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        val start = atStartOfDay(cal.time)
+        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
+        val end = atEndOfDay(cal.time)
+        val monthSpent = data.filter { !it.date.before(start) && !it.date.after(end) }.sumOf { it.amount }
+        val remaining = (amountMonthly - monthSpent).coerceAtLeast(0.0)
+        val todayStart = atStartOfDay(Calendar.getInstance().time)
+        val daysRemaining = ((end.time - todayStart.time) / (24*60*60*1000L) + 1).coerceAtLeast(0).toInt()
+        val dailyAllowance = if (daysRemaining > 0) kotlin.math.floor((remaining / daysRemaining)).toLong() else 0L
+        return BudgetInfo(symbol, amountMonthly, monthSpent, remaining, daysRemaining, dailyAllowance, mode)
+    }
+
+    private fun quickBudgetSummary(): String {
+        val info = getBudgetInfo() ?: return "No hay presupuesto definido. Ve a Gastos y toca la billetera para configurarlo."
+        return buildString {
+            append("Presupuesto mensual: ${info.symbol} ${String.format(Locale.getDefault(), "%.0f", kotlin.math.floor(info.monthlyAmount))} (modo: ${info.mode})\n")
+            append("Gastado este mes: ${info.symbol} ${String.format(Locale.getDefault(), "%.2f", info.monthSpent)}\n")
+            append("Restante del mes: ${info.symbol} ${String.format(Locale.getDefault(), "%.2f", info.remaining)}\n")
+            append("Días restantes: ${info.daysRemaining}; permitido diario: ${info.symbol} ${info.dailyAllowance}")
+        }
+    }
+
+    private fun quickDailyBudget(): String {
+        val info = getBudgetInfo() ?: return "No hay presupuesto definido. Ve a Gastos y toca la billetera para configurarlo."
+        return "Permitido diario: ${info.symbol} ${info.dailyAllowance} (restante del mes: ${info.symbol} ${String.format(Locale.getDefault(), "%.2f", info.remaining)})"
+    }
+
+    private fun quickBudgetRemaining(): String {
+        val info = getBudgetInfo() ?: return "No hay presupuesto definido. Ve a Gastos y toca la billetera para configurarlo."
+        return "Restante del mes: ${info.symbol} ${String.format(Locale.getDefault(), "%.2f", info.remaining)}; días restantes: ${info.daysRemaining}"
+    }
+
+    private fun quickIncomeEmitters(): String {
+        val incomes = storage.getIncomeSnapshot()
+        if (incomes.isEmpty()) return "No hay ingresos/recargas registradas aún."
+        val symbol = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("currency_symbol", "S/") ?: "S/"
+        // Sum by emitter and show top 3
+        val byEmitter = incomes.groupBy { it.emitter }
+            .mapValues { it.value.sumOf { inc -> inc.amount } }
+            .entries.sortedByDescending { it.value }
+        val top = byEmitter.take(3)
+        val lines = top.joinToString("\n") { (name, amt) -> "• ${name}: ${symbol} ${String.format(Locale.getDefault(), "%.2f", amt)}" }
+        val recent = incomes.maxByOrNull { it.date.time }
+        val recentStr = recent?.let { "Último ingreso: ${it.emitter} — ${symbol} ${String.format(Locale.getDefault(), "%.2f", it.amount)}" } ?: ""
+        return buildString {
+            append("Emisores (top):\n")
+            append(lines)
+            if (recentStr.isNotBlank()) {
+                append("\n")
+                append(recentStr)
+            }
         }
     }
 

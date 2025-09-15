@@ -8,7 +8,7 @@ Una aplicación Android moderna para el control de gastos personales con reconoc
 - **Registro rápido por voz**: Doble toque en botones de volumen para activar
 - **Registro manual**: Formulario intuitivo con categorías predefinidas
 - **Base de datos local**: Almacenamiento offline con SQLite/Room
-- **Navegación por pestañas**: Gastos, Estadísticas y Perfiles 
+- **Navegación por pestañas**: Gastos, Estadísticas y Perfiles
 
 ### 🎤 Reconocimiento de Voz
 - **Offline**: Usa la librería Vosk para reconocimiento sin internet

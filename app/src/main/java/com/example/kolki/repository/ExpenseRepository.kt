@@ -49,6 +49,17 @@ class ExpenseRepository(private val storage: SimpleExpenseStorage) {
                 }
                 .sortedByDescending { it.total }
         }
+
+    fun getExpensesByCategoryBetween(startDate: Date, endDate: Date): Flow<List<SimpleCategoryTotal>> =
+        storage.expenses.map { expenses ->
+            expenses
+                .filter { it.date.after(startDate) && it.date.before(endDate) }
+                .groupBy { it.category }
+                .map { (category, expenseList) ->
+                    SimpleCategoryTotal(category, expenseList.sumOf { it.amount })
+                }
+                .sortedByDescending { it.total }
+        }
     
     fun getAllCategories(): Flow<List<String>> = 
         storage.expenses.map { expenses ->
@@ -60,6 +71,8 @@ class ExpenseRepository(private val storage: SimpleExpenseStorage) {
     fun insertIncome(income: SimpleIncome) = storage.insertIncome(income)
     
     fun deleteExpense(expense: SimpleExpense) = storage.deleteExpense(expense)
+    
+    fun updateExpense(expense: SimpleExpense) = storage.updateExpense(expense)
     
     fun clearAllData() = storage.clearAllData()
 }

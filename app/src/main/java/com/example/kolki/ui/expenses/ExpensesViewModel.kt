@@ -36,6 +36,10 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
         repository.deleteExpense(expense)
     }
 
+    fun updateExpense(expense: SimpleExpense) = viewModelScope.launch {
+        repository.updateExpense(expense)
+    }
+
     fun insertIncome(income: SimpleIncome) = viewModelScope.launch {
         repository.insertIncome(income)
     }

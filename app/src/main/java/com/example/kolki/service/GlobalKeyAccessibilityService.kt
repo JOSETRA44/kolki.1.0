@@ -31,6 +31,7 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
 
     private var lastKeyTimes = mutableListOf<Long>()
     private var listening = AtomicBoolean(false)
+    private var lastLaunchAt: Long = 0L
     private var autoSaveJob: Job? = null
     private lateinit var notifManager: NotificationManager
     private val channelId = "kolki_voice_channel"
@@ -59,8 +60,16 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
         val enabled = prefs.getBoolean("global_access_enabled", false)
         if (!enabled) return false
 
-        if (event.action == KeyEvent.ACTION_DOWN &&
-            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            val mode = prefs.getString("global_key_mode", "both") ?: "both"
+            val isUp = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP
+            val isDown = event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+            val allowed = when (mode) {
+                "up" -> isUp
+                "down" -> isDown
+                else -> (isUp || isDown)
+            }
+            if (!allowed) return false
 
             val windowMs = prefs.getInt("global_press_window_ms", 500)
             val requiredPresses = prefs.getInt("global_press_count", 3)
@@ -76,7 +85,22 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
             }
 
             if (lastKeyTimes.size >= requiredPresses && listening.compareAndSet(false, true)) {
-                // Launch lightweight voice capture activity (overlay style)
+                // Cooldown to avoid double-launch within a short window
+                val cooldownMs = prefs.getInt("global_launch_cooldown_ms", 800)
+                if (now - lastLaunchAt < cooldownMs) {
+                    if (prefs.getBoolean("global_debug_notify", false)) {
+                        postSavedNotification("Trigger ignorado (cooldown)")
+                    }
+                    listening.set(false)
+                    lastKeyTimes.clear()
+                    return true
+                }
+                lastLaunchAt = now
+                // Debug: notify that trigger threshold was reached
+                if (prefs.getBoolean("global_debug_notify", false)) {
+                    postSavedNotification("Trigger global: iniciando voz")
+                }
+                // Launch overlay directly (previous stable behavior)
                 try {
                     com.example.kolki.ui.quick.QuickVoiceActivity.launchFromService(this)
                 } catch (e: Exception) {

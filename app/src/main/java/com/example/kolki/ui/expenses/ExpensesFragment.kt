@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.navigation.fragment.findNavController
 import androidx.core.widget.doOnTextChanged
 import androidx.appcompat.app.AlertDialog
+import androidx.core.widget.NestedScrollView
+import com.google.android.material.button.MaterialButton
 import com.example.kolki.databinding.FragmentExpensesBinding
 import com.example.kolki.data.SimpleIncome
 
@@ -26,9 +28,73 @@ class ExpensesFragment : Fragment() {
     private var filterCategory: Boolean = true
     private var filterComment: Boolean = true
     private var filterDate: Boolean = true
+    private var visibleDayCount: Int = 3 // show Today + Yesterday + anteayer
 
     companion object {
         private var adviceShownThisSession = false
+    }
+
+    private fun showEditExpenseDialog(expense: com.example.kolki.data.SimpleExpense) {
+        val ctx = requireContext()
+        val container = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 8)
+        }
+
+        // Categoría
+        val catTil = com.google.android.material.textfield.TextInputLayout(ctx).apply { hint = "Categoría" }
+        val catEt = com.google.android.material.textfield.TextInputEditText(ctx).apply {
+            setText(expense.category)
+        }
+        catTil.addView(catEt)
+        container.addView(catTil)
+
+        // Monto
+        val amtTil = com.google.android.material.textfield.TextInputLayout(ctx).apply { hint = "Monto" }
+        val amtEt = com.google.android.material.textfield.TextInputEditText(ctx).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText(String.format(java.util.Locale.getDefault(), "%.2f", expense.amount))
+        }
+        amtTil.addView(amtEt)
+        container.addView(amtTil)
+
+        // Comentario
+        val comTil = com.google.android.material.textfield.TextInputLayout(ctx).apply { hint = "Comentario (opcional)" }
+        val comEt = com.google.android.material.textfield.TextInputEditText(ctx).apply {
+            setText(expense.comment ?: "")
+        }
+        comTil.addView(comEt)
+        container.addView(comTil)
+
+        AlertDialog.Builder(ctx)
+            .setTitle("Editar gasto")
+            .setView(container)
+            .setPositiveButton("Guardar") { dialog, _ ->
+                val newCat = catEt.text?.toString()?.trim().orEmpty()
+                val newAmtText = amtEt.text?.toString()?.replace(',', '.')?.trim().orEmpty()
+                val newAmt = newAmtText.toDoubleOrNull() ?: -1.0
+                val newCom = comEt.text?.toString()?.trim().orEmpty()
+
+                if (newCat.isBlank()) {
+                    android.widget.Toast.makeText(ctx, "Ingrese la categoría", android.widget.Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                if (newAmt <= 0) {
+                    android.widget.Toast.makeText(ctx, "Ingrese un monto válido", android.widget.Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val updated = expense.copy(
+                    category = newCat,
+                    amount = newAmt,
+                    comment = newCom.ifBlank { null }
+                )
+                viewModel.updateExpense(updated)
+                android.widget.Toast.makeText(ctx, "Gasto actualizado", android.widget.Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     override fun onCreateView(
@@ -42,7 +108,6 @@ class ExpensesFragment : Fragment() {
 
     // ===== Advice helpers =====
     private fun buildAdviceMessage(): String {
-        if (allExpenses.isEmpty()) return ""
         val today = java.util.Calendar.getInstance()
         val yesterday = (today.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_MONTH, -1) }
         fun sameDay(a: java.util.Date, cal: java.util.Calendar): Boolean {
@@ -50,8 +115,9 @@ class ExpensesFragment : Fragment() {
             return c.get(java.util.Calendar.YEAR) == cal.get(java.util.Calendar.YEAR) &&
                     c.get(java.util.Calendar.DAY_OF_YEAR) == cal.get(java.util.Calendar.DAY_OF_YEAR)
         }
-        val todaySum = allExpenses.filter { sameDay(it.date, today) }.sumOf { it.amount }
-        val yestSum = allExpenses.filter { sameDay(it.date, yesterday) }.sumOf { it.amount }
+        val hasExpenses = allExpenses.isNotEmpty()
+        val todaySum = if (hasExpenses) allExpenses.filter { sameDay(it.date, today) }.sumOf { it.amount } else 0.0
+        val yestSum = if (hasExpenses) allExpenses.filter { sameDay(it.date, yesterday) }.sumOf { it.amount } else 0.0
 
         // Record day logic (max single-day spend this month)
         val monthCal = java.util.Calendar.getInstance().apply { set(java.util.Calendar.DAY_OF_MONTH, 1) }
@@ -61,10 +127,10 @@ class ExpensesFragment : Fragment() {
             return c.get(java.util.Calendar.MONTH) == monthCal.get(java.util.Calendar.MONTH) &&
                     c.get(java.util.Calendar.YEAR) == monthCal.get(java.util.Calendar.YEAR)
         }
-        val monthExpenses = allExpenses.filter { inMonth(it.date) }
-        val byDay = monthExpenses.groupBy { val c = java.util.Calendar.getInstance().apply { time = it.date }; c.get(java.util.Calendar.DAY_OF_YEAR) }
+        val monthExpenses = if (hasExpenses) allExpenses.filter { inMonth(it.date) } else emptyList()
+        val byDay = if (hasExpenses) monthExpenses.groupBy { val c = java.util.Calendar.getInstance().apply { time = it.date }; c.get(java.util.Calendar.DAY_OF_YEAR) } else emptyMap()
         val maxDayTotal = byDay.maxOfOrNull { it.value.sumOf { e -> e.amount } } ?: 0.0
-        val todayIsRecord = todaySum > 0 && todaySum >= maxDayTotal
+        val todayIsRecord = hasExpenses && todaySum > 0 && todaySum >= maxDayTotal
 
         // Top category this week
         val weekStart = (today.clone() as java.util.Calendar).apply {
@@ -75,7 +141,7 @@ class ExpensesFragment : Fragment() {
             val c = java.util.Calendar.getInstance().apply { time = d }
             return !c.before(weekStart) && !c.after(today)
         }
-        val weekExpenses = allExpenses.filter { inCurrentWeek(it.date) }
+        val weekExpenses = if (hasExpenses) allExpenses.filter { inCurrentWeek(it.date) } else emptyList()
         val topCat = weekExpenses.groupBy { it.category }.mapValues { it.value.sumOf { e -> e.amount } }.maxByOrNull { it.value }?.key
 
         // Projection to month end: very rough
@@ -89,14 +155,47 @@ class ExpensesFragment : Fragment() {
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
         fun money(v: Double) = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", v)}"
 
-        val parts = mutableListOf<String>()
-        if (todaySum > yestSum && yestSum > 0) parts += "Gastaste más que ayer (${money(todaySum)} vs ${money(yestSum)})."
-        if (todayIsRecord) parts += "Hoy es tu récord de gasto del mes (${money(todaySum)})."
-        if (!topCat.isNullOrBlank()) parts += "Esta semana gastaste más en ${topCat}."
-        // If projected > spentMonth by a large margin, warn
-        if (projected > spentMonth * 1.4 && projected > 0) parts += "A este paso podrías no llegar a fin de mes (proyección: ${money(projected)})."
+        // Contextual tips (prefs already loaded)
+        val budgetAmount = prefs.getFloat("budget_amount", 0f).toDouble()
+        val globalEnabled = prefs.getBoolean("global_access_enabled", false)
+        val usedDeep = prefs.getBoolean("used_deep_analysis", false)
+        // Strict hierarchical selection: pick first matching
+        // 1) Missing critical setup
+        if (budgetAmount <= 0.0) return "Establece tu presupuesto mensual tocando la billetera en Gastos."
+        if (!globalEnabled) return "Activa la detección global en Ajustes > Accesibilidad para registrar por voz desde cualquier pantalla."
 
-        return parts.joinToString(" ")
+        // 2) Risk/warning if data exists
+        if (hasExpenses && projected > spentMonth * 1.4 && projected > 0) {
+            return "A este paso podrías no llegar a fin de mes (proyección: ${money(projected)})."
+        }
+
+        // 3) Highlights/comparisons
+        if (hasExpenses && todayIsRecord) return "Hoy es tu récord de gasto del mes (${money(todaySum)})."
+        if (hasExpenses && todaySum > yestSum && yestSum > 0) return "Gastaste más que ayer (${money(todaySum)} vs ${money(yestSum)})."
+        if (hasExpenses && !topCat.isNullOrBlank()) return "Esta semana gastaste más en ${topCat}."
+
+        // 4) Promote deep analysis if never used
+        if (!usedDeep) return "Prueba Análisis Profundo con IA en Estadísticas (obtén insights personalizados)."
+
+        // 5) Fallbacks with rotation (persist index to avoid repeating the same)
+        val fallbacks = mutableListOf<String>().apply {
+            // If budget exists, show remaining this month
+            val remainingMonth = (budgetAmount - spentMonth).coerceAtLeast(0.0)
+            add("Te quedan ${money(remainingMonth)} para este mes.")
+            add("La mejor manera de crecer es ahorrando un poco cada día.")
+            add("Pequeños gastos suman: registra todo para controlarlo.")
+            add("Revisa Estadísticas para ver en qué categorías gastas más.")
+            add("Activa avisos de presupuesto en Ajustes si quieres alertas diarias.")
+        }
+        val rotateKey = "advice_rotate_idx"
+        val rotateDayKey = "advice_rotate_ymd"
+        val now = java.util.Calendar.getInstance()
+        val ymd = now.get(java.util.Calendar.YEAR) * 10000 + (now.get(java.util.Calendar.MONTH) + 1) * 100 + now.get(java.util.Calendar.DAY_OF_MONTH)
+        val currentDay = prefs.getInt(rotateDayKey, 0)
+        val currentIdx = prefs.getInt(rotateKey, 0)
+        val newIdx = if (currentDay == ymd) (currentIdx + 1) % fallbacks.size else 0
+        prefs.edit().putInt(rotateKey, newIdx).putInt(rotateDayKey, ymd).apply()
+        return fallbacks[newIdx]
     }
 
     private fun quickAdviceForLast(): String {
@@ -152,6 +251,22 @@ class ExpensesFragment : Fragment() {
         // Load filter toggles from preferences
         loadSearchFilterPrefs()
 
+        // Greeting with user name in header (if configured)
+        try {
+            val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+            val name = prefs.getString("user_name", null)?.takeIf { it.isNotBlank() }
+            val tv = binding.headerTitle
+            if (name != null) {
+                tv.visibility = View.VISIBLE
+                tv.text = "Hola, $name"
+                tv.textSize = 16f
+                tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
+            } else {
+                // keep it subtle or hidden when no name
+                tv.visibility = View.GONE
+            }
+        } catch (_: Exception) {}
+
         // Real-time search
         binding.searchInput.doOnTextChanged { text, _, _, _ ->
             applySearchAndFilters(text?.toString().orEmpty())
@@ -168,16 +283,23 @@ class ExpensesFragment : Fragment() {
             val msg = buildAdviceMessage()
             if (msg.isNotBlank()) showAdvice(msg)
         }
+
+        // Auto-load more when scrolled to bottom
+        binding.contentScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { v, _, scrollY, _, _ ->
+            val child = v.getChildAt(0)
+            if (child != null && scrollY + v.height >= child.height - 8) {
+                maybeLoadMore()
+            }
+        })
     }
     
     private fun setupRecyclerView() {
         expensesAdapter = ExpensesAdapter(
             onItemClick = { _ ->
-                // TODO: open detail/edit screen
+                // Futuro: detalle del gasto
             },
             onEdit = { expense ->
-                // TODO: open edit UI (prefill AddExpenseFragment with data)
-                android.widget.Toast.makeText(requireContext(), "Editar próximamente", android.widget.Toast.LENGTH_SHORT).show()
+                showEditExpenseDialog(expense)
             },
             onDelete = { expense ->
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -233,6 +355,13 @@ class ExpensesFragment : Fragment() {
                 showAdvice(msg)
             }
         }
+
+        binding.loadMoreButton.setOnClickListener {
+            showLoadingFooter()
+            visibleDayCount += 2
+            applySearchAndFilters(binding.searchInput.text?.toString().orEmpty())
+            hideLoadingFooterSoon()
+        }
     }
     
     private fun observeViewModel() {
@@ -241,8 +370,19 @@ class ExpensesFragment : Fragment() {
             applySearchAndFilters(binding.searchInput.text?.toString().orEmpty())
             // Detect newly added expense and show a quick advice
             if (allExpenses.size > lastCount) {
-                val msg = quickAdviceForLast()
-                if (msg.isNotBlank()) showAdvice(msg)
+                try {
+                    val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+                    val lastSeenTs = prefs.getLong("last_seen_expense_ts", 0L)
+                    val latest = allExpenses.maxByOrNull { it.createdAt } ?: allExpenses.maxByOrNull { it.date.time }
+                    val latestTs = (latest?.createdAt ?: latest?.date?.time ?: 0L)
+                    val recentWindowMs = 2 * 60 * 1000L
+                    val now = System.currentTimeMillis()
+                    if (latestTs > lastSeenTs && (now - latestTs) <= recentWindowMs) {
+                        val msg = quickAdviceForLast()
+                        if (msg.isNotBlank()) showAdvice(msg)
+                        prefs.edit().putLong("last_seen_expense_ts", latestTs).apply()
+                    }
+                } catch (_: Exception) {}
             }
             lastCount = allExpenses.size
             
@@ -250,9 +390,11 @@ class ExpensesFragment : Fragment() {
             if (allExpenses.isEmpty()) {
                 binding.emptyStateLayout.visibility = View.VISIBLE
                 binding.expensesRecyclerView.visibility = View.GONE
+                binding.loadMoreButton.visibility = View.GONE
             } else {
                 binding.emptyStateLayout.visibility = View.GONE
                 binding.expensesRecyclerView.visibility = View.VISIBLE
+                updateLoadMoreVisibility()
             }
 
             // Stop refreshing spinner if active
@@ -264,7 +406,9 @@ class ExpensesFragment : Fragment() {
             val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
             val txt = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", value ?: 0.0)}"
             binding.remainingText.text = txt
-            binding.remainingText.setTextColor(if ((value ?: 0.0) >= 0) android.graphics.Color.parseColor("#2E7D32") else android.graphics.Color.RED)
+            val green = androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.income_green)
+            val red = androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red)
+            binding.remainingText.setTextColor(if ((value ?: 0.0) >= 0) green else red)
         }
 
         // Categories not needed in expenses list view
@@ -305,11 +449,101 @@ class ExpensesFragment : Fragment() {
                 } else {
                     viewModel.insertIncome(SimpleIncome(emitter = emitter, amount = amount))
                     Toast.makeText(requireContext(), "Ingreso agregado", Toast.LENGTH_SHORT).show()
+                    // Celebrate with money rain from wallet button
+                    playMoneyRainFromWallet()
                 }
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun playMoneyRainFromWallet() {
+        if (!isAdded) return
+        val wallet = try { binding.headerBudgetButton } catch (_: Exception) { null } ?: return
+        val root = activity?.findViewById<android.view.ViewGroup>(android.R.id.content) ?: return
+
+        val walletLoc = IntArray(2)
+        wallet.getLocationOnScreen(walletLoc)
+        val startX = walletLoc[0] + wallet.width / 2f
+        val startY = walletLoc[1] + wallet.height / 2f
+
+        val screenH = root.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
+        val screenW = root.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+
+        fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+        // Subtle burst at wallet
+        runCatching {
+            val burst = android.widget.ImageView(requireContext()).apply {
+                setImageResource(android.R.drawable.star_big_on)
+                alpha = 0f
+                layoutParams = android.view.ViewGroup.LayoutParams(dp(24), dp(24))
+                x = startX - dp(12)
+                y = startY - dp(12)
+            }
+            root.addView(burst)
+            val a1 = android.animation.ObjectAnimator.ofFloat(burst, android.view.View.ALPHA, 0f, 1f, 0f).apply { duration = 450 }
+            val a2 = android.animation.ObjectAnimator.ofFloat(burst, android.view.View.SCALE_X, 0.2f, 1.4f, 1f).apply { duration = 450 }
+            val a3 = android.animation.ObjectAnimator.ofFloat(burst, android.view.View.SCALE_Y, 0.2f, 1.4f, 1f).apply { duration = 450 }
+            android.animation.AnimatorSet().apply {
+                playTogether(a1, a2, a3)
+                addListener(object : android.animation.AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: android.animation.Animator) { root.removeView(burst) }
+                })
+                start()
+            }
+        }
+
+        val icons = intArrayOf(
+            com.example.kolki.R.drawable.ic_coin,
+            com.example.kolki.R.drawable.ic_bill
+        )
+
+        val count = 24
+        repeat(count) { i ->
+            root.postDelayed({
+                try {
+                    val iv = android.widget.ImageView(requireContext()).apply {
+                        val which = kotlin.random.Random.nextInt(icons.size)
+                        setImageResource(icons[which])
+                        val size = dp(16 + kotlin.random.Random.nextInt(16))
+                        layoutParams = android.view.ViewGroup.LayoutParams(size, size)
+                        alpha = 0f
+                    }
+                    root.addView(iv)
+
+                    // Start near wallet with small random offset
+                    iv.x = (startX - iv.layoutParams.width / 2f) + kotlin.random.Random.nextInt(-dp(8), dp(8))
+                    iv.y = (startY - iv.layoutParams.height / 2f) + kotlin.random.Random.nextInt(-dp(8), dp(8))
+
+                    val endY = screenH + dp(40)
+                    val driftX = kotlin.random.Random.nextInt(-screenW / 3, screenW / 3)
+                    val rot = if (kotlin.random.Random.nextBoolean()) 360f else -360f
+                    val duration = (1000L..1700L).random()
+
+                    val fadeIn = android.animation.ObjectAnimator.ofFloat(iv, android.view.View.ALPHA, 0f, 1f).apply { this.duration = 120 }
+                    val fallY = android.animation.ObjectAnimator.ofFloat(iv, android.view.View.TRANSLATION_Y, 0f, (endY - iv.y)).apply {
+                        this.duration = duration
+                        interpolator = android.view.animation.AccelerateInterpolator(1.6f)
+                    }
+                    val swayX = android.animation.ObjectAnimator.ofFloat(iv, android.view.View.TRANSLATION_X, 0f, driftX.toFloat()).apply {
+                        this.duration = duration
+                        interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+                    }
+                    val rotate = android.animation.ObjectAnimator.ofFloat(iv, android.view.View.ROTATION, 0f, rot).apply { this.duration = duration }
+                    val fadeOut = android.animation.ObjectAnimator.ofFloat(iv, android.view.View.ALPHA, 1f, 0f).apply { this.duration = 260; startDelay = (duration - 260).coerceAtLeast(0) }
+
+                    android.animation.AnimatorSet().apply {
+                        playTogether(fadeIn, fallY, swayX, rotate, fadeOut)
+                        addListener(object : android.animation.AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: android.animation.Animator) { root.removeView(iv) }
+                        })
+                        start()
+                    }
+                } catch (_: Exception) {}
+            }, (i * 35L))
+        }
     }
 
     private fun loadSearchFilterPrefs() {
@@ -351,8 +585,11 @@ class ExpensesFragment : Fragment() {
 
     private fun applySearchAndFilters(queryRaw: String) {
         val query = queryRaw.trim()
+        // If no query -> show limited window by recent days
         if (query.isEmpty()) {
-            expensesAdapter.submitList(allExpenses)
+            val base = limitByRecentDays(allExpenses, visibleDayCount)
+            expensesAdapter.submitList(base)
+            updateLoadMoreVisibility()
             return
         }
         val qLower = query.lowercase()
@@ -381,14 +618,61 @@ class ExpensesFragment : Fragment() {
             return s
         }
 
+        // Search across ALL data; limit results to 15 for performance
         val filtered = allExpenses
             .map { it to score(it) }
             .filter { it.second > 0 }
             .sortedWith(compareByDescending<Pair<com.example.kolki.data.SimpleExpense, Int>> { it.second }
                 .thenByDescending { it.first.date.time })
             .map { it.first }
+            .take(15)
 
         expensesAdapter.submitList(filtered)
+        // When searching, hide 'Ver más' because search spans all data already
+        binding.loadMoreButton.visibility = View.GONE
+    }
+
+    private fun limitByRecentDays(items: List<com.example.kolki.data.SimpleExpense>, days: Int): List<com.example.kolki.data.SimpleExpense> {
+        if (items.isEmpty() || days <= 0) return emptyList()
+        // Build unique day keys (YYYY*1000 + DOY) sorted desc
+        fun dayKey(d: java.util.Date): Int {
+            val c = java.util.Calendar.getInstance().apply { time = d }
+            return c.get(java.util.Calendar.YEAR) * 1000 + c.get(java.util.Calendar.DAY_OF_YEAR)
+        }
+        val sortedKeys = items.map { dayKey(it.date) }.distinct().sortedDescending()
+        val keep = sortedKeys.take(days).toSet()
+        return items.filter { keep.contains(dayKey(it.date)) }
+    }
+
+    private fun updateLoadMoreVisibility() {
+        // Show button if there are more days beyond the current window
+        fun dayKey(d: java.util.Date): Int {
+            val c = java.util.Calendar.getInstance().apply { time = d }
+            return c.get(java.util.Calendar.YEAR) * 1000 + c.get(java.util.Calendar.DAY_OF_YEAR)
+        }
+        val totalDays = allExpenses.map { dayKey(it.date) }.distinct().size
+        binding.loadMoreButton.visibility = if (totalDays > visibleDayCount) View.VISIBLE else View.GONE
+    }
+
+    private fun maybeLoadMore() {
+        // If button is visible, we can load more
+        if (binding.loadMoreButton.visibility == View.VISIBLE) {
+            showLoadingFooter()
+            visibleDayCount += 2
+            applySearchAndFilters(binding.searchInput.text?.toString().orEmpty())
+            hideLoadingFooterSoon()
+        }
+    }
+
+    private fun showLoadingFooter() {
+        try { binding.loadMoreFooter.visibility = View.VISIBLE } catch (_: Exception) {}
+    }
+
+    private fun hideLoadingFooterSoon() {
+        // Small delay to ensure user perceives the load
+        binding.loadMoreFooter.postDelayed({
+            try { binding.loadMoreFooter.visibility = View.GONE } catch (_: Exception) {}
+        }, 450)
     }
     
     // Add expense functionality moved to AddExpenseFragment

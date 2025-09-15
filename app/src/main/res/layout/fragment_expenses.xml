@@ -12,6 +12,7 @@
         android:layout_height="match_parent">
 
         <androidx.core.widget.NestedScrollView
+            android:id="@+id/contentScroll"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginBottom="16dp">
@@ -84,7 +85,7 @@
                         android:layout_height="40dp"
                         android:background="@android:color/transparent"
                         android:contentDescription="Avisos"
-                        app:srcCompat="@android:drawable/ic_dialog_info"
+                        app:srcCompat="@drawable/ic_notifications_24"
                         app:tint="@color/accent_purple"
                         android:padding="6dp" />
                 </LinearLayout>
@@ -145,6 +146,41 @@
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_expense" />
+
+                <!-- Load more button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/loadMoreButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Ver más"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:visibility="gone" />
+
+                <!-- Bottom loading footer -->
+                <LinearLayout
+                    android:id="@+id/loadMoreFooter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp"
+                    android:visibility="gone">
+
+                    <ProgressBar
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        style="@android:style/Widget.Material.ProgressBar.Small"
+                        android:indeterminate="true" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Cargando más..."
+                        android:textSize="12sp"
+                        android:textColor="@android:color/darker_gray" />
+                </LinearLayout>
 
                 <!-- Empty State -->
                 <LinearLayout

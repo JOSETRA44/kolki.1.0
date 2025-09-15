@@ -11,12 +11,18 @@ import android.os.Looper
 import android.util.Log
 import java.util.*
 import android.content.Context.MODE_PRIVATE
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 
 class SimpleSpeechRecognizer(private val context: Context) {
     
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var lastPartial: String? = null
+    private var audioManager: AudioManager? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
+    private var previousAudioMode: Int? = null
     
     companion object {
         private const val TAG = "SimpleSpeechRecognizer"
@@ -41,6 +47,31 @@ class SimpleSpeechRecognizer(private val context: Context) {
         // Ensure we run on main looper
         val mainHandler = Handler(Looper.getMainLooper())
         mainHandler.post {
+            // Prepare Audio for voice capture (Android 10+ friendly)
+            try {
+                audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                previousAudioMode = audioManager?.mode
+                // Switch to voice communication mode to improve mic routing and echo canceller
+                audioManager?.mode = AudioManager.MODE_IN_COMMUNICATION
+                val attrs = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                val afr = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setWillPauseWhenDucked(false)
+                    .setOnAudioFocusChangeListener { /* no-op */ }
+                    .setAudioAttributes(attrs)
+                    .build()
+                val res = audioManager?.requestAudioFocus(afr)
+                if (res == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                    audioFocusRequest = afr
+                } else {
+                    Log.w(TAG, "AudioFocus not granted: $res")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Audio setup failed: ${e.message}")
+            }
+
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
             
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
@@ -73,6 +104,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
                     val text = lastPartial!!
                     lastPartial = null
                     callback.onResult(text)
+                    releaseAudio()
                     return
                 }
                 val errorMessage = when (error) {
@@ -89,6 +121,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
                 }
                 Log.e(TAG, "Speech recognition error: $errorMessage")
                 callback.onError(errorMessage)
+                releaseAudio()
             }
             
             override fun onResults(results: Bundle?) {
@@ -99,14 +132,17 @@ class SimpleSpeechRecognizer(private val context: Context) {
                     val result = matches.maxByOrNull { it.length } ?: matches[0]
                     Log.d(TAG, "Speech result: $result")
                     callback.onResult(result)
+                    releaseAudio()
                 } else {
                     // Fall back to last partial if available
                     if (!lastPartial.isNullOrBlank()) {
                         val text = lastPartial!!
                         lastPartial = null
                         callback.onResult(text)
+                        releaseAudio()
                     } else {
                         callback.onError("No se reconoció ningún texto")
+                        releaseAudio()
                     }
                 }
             }
@@ -126,25 +162,30 @@ class SimpleSpeechRecognizer(private val context: Context) {
             
             // Language selection: from prefs or device default
             val prefs = context.getSharedPreferences("kolki_prefs", MODE_PRIVATE)
-            val langTag = prefs.getString("voice_language_tag", null)
-            val deviceLocale = if (!langTag.isNullOrBlank()) {
-                try { Locale.forLanguageTag(langTag) } catch (_: Exception) { Locale.getDefault() }
+            val prefLangTag = prefs.getString("voice_language_tag", null)
+            val deviceLocale = if (!prefLangTag.isNullOrBlank()) {
+                try { Locale.forLanguageTag(prefLangTag) } catch (_: Exception) { Locale.getDefault() }
             } else {
-                // Default preferred Spanish (Peru) if device language is Spanish, else device default
-                val def = Locale.getDefault()
-                if (def.language.equals("es", ignoreCase = true)) Locale("es", "PE") else def
+                Locale.getDefault()
             }
+            val localeTag = try { deviceLocale.toLanguageTag() } catch (_: Exception) { deviceLocale.toString() }
+            val preferOffline = prefs.getBoolean("voice_prefer_offline", false)
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, deviceLocale)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, deviceLocale)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, localeTag)
+                // Some engines require calling package for better routing
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-                // Prefer online results for better accuracy
-                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
-                // Give user a bit more silence before auto-finishing
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000)
+                // Limit to best hypothesis to speed up results
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                // Prefer offline results (configurable)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline)
+                // More tolerant timings for partials and natural pauses (ms)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000)
+                // Allow a bit more minimum speaking time
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1300)
             }
             
             try {
@@ -153,6 +194,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
                 Log.e(TAG, "Error starting speech recognition", e)
                 callback.onError("Error al iniciar reconocimiento: ${e.message}")
                 isListening = false
+                releaseAudio()
             }
         }
     }
@@ -162,6 +204,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
             speechRecognizer?.stopListening()
         }
         isListening = false
+        releaseAudio()
     }
     
     fun cleanup() {
@@ -171,4 +214,19 @@ class SimpleSpeechRecognizer(private val context: Context) {
     }
     
     fun isListening(): Boolean = isListening
+
+    private fun releaseAudio() {
+        try {
+            audioFocusRequest?.let { afr ->
+                audioManager?.abandonAudioFocusRequest(afr)
+            }
+            audioFocusRequest = null
+            previousAudioMode?.let { mode ->
+                audioManager?.mode = mode
+            }
+            previousAudioMode = null
+        } catch (e: Exception) {
+            Log.w(TAG, "Audio release failed: ${e.message}")
+        }
+    }
 }

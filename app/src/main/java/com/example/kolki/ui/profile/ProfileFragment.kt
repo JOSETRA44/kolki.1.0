@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.kolki.data.SimpleExpenseStorage
 import com.example.kolki.util.BudgetLog
 import com.example.kolki.databinding.FragmentProfileBinding
@@ -195,14 +196,50 @@ class ProfileFragment : Fragment() {
             startExport()
         }
 
-        // Set monthly budget
-        binding.setMonthlyBudgetLayout.setOnClickListener {
-            showBudgetDialog()
-        }
+        // Manage budgets (new screen)
+        try {
+            val manage = view.findViewById<View>(com.example.kolki.R.id.manageBudgetsLayout)
+            manage?.setOnClickListener {
+                try { findNavController().navigate(com.example.kolki.R.id.navigation_manage_budgets) } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
 
         // Avisos: historial de presupuestos
         try {
             binding.avisosLayout.setOnClickListener { showBudgetNotices() }
+        } catch (_: Exception) {}
+
+        // About actions removed from Perfil; now live under Ajustes -> Acerca de Kolki
+
+        // ==== User name (personalization) ====
+        try {
+            val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
+            val name = prefs.getString("user_name", null)
+            val nameTv = binding.root.findViewById<android.widget.TextView>(com.example.kolki.R.id.userNameText)
+            nameTv?.text = if (!name.isNullOrBlank()) name else "—"
+
+            val row = binding.root.findViewById<View>(com.example.kolki.R.id.userNameLayout)
+            row?.setOnClickListener {
+                val ctx = requireContext()
+                val til = com.google.android.material.textfield.TextInputLayout(ctx).apply { hint = "Tu nombre" }
+                val et = com.google.android.material.textfield.TextInputEditText(ctx).apply {
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                    setText(prefs.getString("user_name", ""))
+                }
+                til.addView(et)
+                androidx.appcompat.app.AlertDialog.Builder(ctx)
+                    .setTitle("Configurar nombre")
+                    .setView(til)
+                    .setPositiveButton("Guardar") { d, _ ->
+                        val v = et.text?.toString()?.trim().orEmpty()
+                        prefs.edit().putString("user_name", v).apply()
+                        nameTv?.text = if (v.isBlank()) "—" else v
+                        android.widget.Toast.makeText(ctx, "Nombre actualizado", android.widget.Toast.LENGTH_SHORT).show()
+                        d.dismiss()
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
         } catch (_: Exception) {}
     }
 

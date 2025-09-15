@@ -91,6 +91,15 @@ class SimpleExpenseStorage(context: Context) {
         saveExpenses(currentExpenses)
     }
 
+    fun updateExpense(updated: SimpleExpense) {
+        val current = _expenses.value.toMutableList()
+        val idx = current.indexOfFirst { it.id == updated.id }
+        if (idx >= 0) {
+            current[idx] = updated
+            saveExpenses(current)
+        }
+    }
+
     fun insertIncome(income: SimpleIncome) {
         val current = _incomes.value.toMutableList()
         current.add(0, income)
@@ -198,4 +207,7 @@ class SimpleExpenseStorage(context: Context) {
         if (v.contains('"')) v = v.replace("\"", "\"\"")
         return if (mustQuote) "\"$v\"" else v
     }
+
+    // === Public helper to read current incomes in-memory snapshot ===
+    fun getIncomeSnapshot(): List<SimpleIncome> = _incomes.value
 }
