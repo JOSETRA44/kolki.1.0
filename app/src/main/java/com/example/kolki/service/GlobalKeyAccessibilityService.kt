@@ -59,8 +59,16 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
         val enabled = prefs.getBoolean("global_access_enabled", false)
         if (!enabled) return false
 
-        if (event.action == KeyEvent.ACTION_DOWN &&
-            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            val mode = prefs.getString("global_key_mode", "both") ?: "both"
+            val isUp = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP
+            val isDown = event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+            val allowed = when (mode) {
+                "up" -> isUp
+                "down" -> isDown
+                else -> (isUp || isDown)
+            }
+            if (!allowed) return false
 
             val windowMs = prefs.getInt("global_press_window_ms", 500)
             val requiredPresses = prefs.getInt("global_press_count", 3)

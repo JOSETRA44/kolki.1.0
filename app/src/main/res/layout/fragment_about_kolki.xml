@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.settings.AboutKolkiFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Acerca de Kolki"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/aboutText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:lineSpacingExtra="2dp"
+            android:text="Kolki es una app de control de gastos con análisis inteligente y registro por voz.\n\nApp desarrollada por un estudiante de Economía y Sistemas, con recursos propios. Si te gusta y deseas apoyar el desarrollo, puedes realizar una donación por banca móvil al número 953834209. Este apoyo ayuda a seguir mejorando la aplicación.\n\nPrivacidad: la app no vende ni lucra con tus datos. La IA solo ejecuta comandos internos para consultar tus datos locales cuando tú lo solicitas. Tu seguridad y privacidad son nuestra prioridad.\n\n¿Comentarios o dudas? Escríbele por WhatsApp al mismo número. También puedes solicitar tus llaves (API keys) para funciones de IA; se entregan por WhatsApp para proteger tus datos.\n\n¡Gracias por usar Kolki! Si encuentras errores, por favor repórtalos por WhatsApp para corregirlos lo antes posible." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="start"
+            android:layout_marginTop="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/copyNumberButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Copiar número" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/openWhatsappButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WhatsApp"
+                android:layout_marginTop="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/requestApiKeysButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Solicitar API Keys"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

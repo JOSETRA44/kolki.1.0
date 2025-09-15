@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.kolki.data.SimpleExpenseStorage
 import com.example.kolki.databinding.FragmentSettingsBinding
 
@@ -183,6 +184,7 @@ class SettingsFragment : Fragment() {
         loadVoiceAutoSaveDelay()
         loadVoiceMaxListen()
         loadGlobalVoiceSettings()
+        loadGlobalKeyMode()
         setupClickListeners()
         // Hide duplicate Export in Settings (lives in Profile)
         try { binding.exportDataLayout.visibility = View.GONE } catch (_: Exception) {}
@@ -204,7 +206,7 @@ class SettingsFragment : Fragment() {
         
         // About
         binding.aboutCard.setOnClickListener {
-            // TODO: Mostrar información de la app
+            try { findNavController().navigate(com.example.kolki.R.id.navigation_about_kolki) } catch (_: Exception) {}
         }
 
         // Export data
@@ -287,6 +289,11 @@ class SettingsFragment : Fragment() {
         // Global window picker
         binding.voiceGlobalWindowLayout.setOnClickListener {
             showGlobalWindowDialog()
+        }
+
+        // Global key mode picker (Up/Down/Both)
+        binding.root.findViewById<View>(com.example.kolki.R.id.voiceGlobalKeyModeLayout)?.setOnClickListener {
+            showGlobalKeyModeDialog()
         }
     }
 
@@ -403,6 +410,35 @@ class SettingsFragment : Fragment() {
         binding.voiceGlobalPressCountValue.text = if (pressCount >= 3) "Triple" else "Doble"
         binding.voiceGlobalWindowValue.text = formatWindow(windowMs)
         setGlobalVoiceControlsEnabled(enabled)
+    }
+
+    private fun loadGlobalKeyMode() {
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val mode = prefs.getString("global_key_mode", "both") ?: "both"
+        val valueTv = binding.root.findViewById<android.widget.TextView>(com.example.kolki.R.id.voiceGlobalKeyModeValue)
+        valueTv?.text = when (mode) {
+            "up" -> "Subir volumen"
+            "down" -> "Bajar volumen"
+            else -> "Ambos"
+        }
+    }
+
+    private fun showGlobalKeyModeDialog() {
+        val options = arrayOf("Subir volumen", "Bajar volumen", "Ambos")
+        val values = arrayOf("up", "down", "both")
+        val prefs = requireContext().getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
+        val cur = prefs.getString("global_key_mode", "both")
+        val idx = values.indexOf(cur).let { if (it >= 0) it else 2 }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Tecla de volumen")
+            .setSingleChoiceItems(options, idx) { dialog, which ->
+                val chosen = values[which]
+                prefs.edit().putString("global_key_mode", chosen).apply()
+                binding.root.findViewById<android.widget.TextView>(com.example.kolki.R.id.voiceGlobalKeyModeValue)?.text = options[which]
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun setGlobalVoiceControlsEnabled(enabled: Boolean) {

@@ -21,9 +21,10 @@
             android:text="Ajustes"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="24dp"
-            android:gravity="center" />
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginBottom="0dp"
+            android:gravity="center"
+            android:visibility="gone" />
 
         <!-- Voice Commands Settings -->
         <com.google.android.material.card.MaterialCardView
@@ -65,14 +66,14 @@
                         android:text="Comandos de Voz"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Configurar reconocimiento de voz"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -88,7 +89,7 @@
                     android:layout_height="wrap_content"
                     android:text=">"
                     android:textSize="18sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_gravity="center_vertical" />
 
             </LinearLayout>
@@ -97,7 +98,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="@android:color/darker_gray" />
+                android:background="?attr/colorOnSurface" />
 
             <!-- Auto-save delay row (legacy inline) -->
         </com.google.android.material.card.MaterialCardView>
@@ -139,14 +140,14 @@
                         android:text="Alertas de presupuesto"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Sonido y notificación al exceder el diario"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -200,7 +201,7 @@
                         android:text="Tiempo máx. de escucha"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/voiceMaxListenValue"
@@ -208,7 +209,7 @@
                         android:layout_height="wrap_content"
                         android:text="8.0 s"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -217,7 +218,7 @@
                     android:layout_height="wrap_content"
                     android:text=">"
                     android:textSize="18sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_gravity="center_vertical" />
 
             </LinearLayout>
@@ -266,14 +267,14 @@
                             android:text="Detección global (Accesibilidad)"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="@android:color/black" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Permite activar con botones de volumen en cualquier pantalla"
                             android:textSize="14sp"
-                            android:textColor="@android:color/darker_gray" />
+                            android:textColor="?attr/colorOnSurface" />
 
                     </LinearLayout>
 
@@ -288,7 +289,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@android:color/darker_gray" />
+                    android:background="?attr/colorOnSurface" />
 
                 <!-- Press count row -->
                 <LinearLayout
@@ -307,7 +308,7 @@
                         android:layout_weight="1"
                         android:text="Pulsaciones"
                         android:textSize="14sp"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/voiceGlobalPressCountValue"
@@ -315,7 +316,7 @@
                         android:layout_height="wrap_content"
                         android:text="Triple"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -336,7 +337,7 @@
                         android:layout_weight="1"
                         android:text="Ventana de detección"
                         android:textSize="14sp"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/voiceGlobalWindowValue"
@@ -344,7 +345,36 @@
                         android:layout_height="wrap_content"
                         android:text="500 ms"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
+
+                </LinearLayout>
+
+                <!-- Key mode row (Up / Down / Both) -->
+                <LinearLayout
+                    android:id="@+id/voiceGlobalKeyModeLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Tecla de volumen"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/voiceGlobalKeyModeValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ambos"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -354,7 +384,7 @@
                     android:padding="16dp"
                     android:text="Nota: debe habilitar Kolki en Ajustes > Accesibilidad para permitir la detección global."
                     android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="?attr/colorOnSurface" />
 
             </LinearLayout>
 
@@ -400,7 +430,7 @@
                         android:text="Espera de auto-guardado"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/voiceAutoSaveDelayValue"
@@ -408,7 +438,7 @@
                         android:layout_height="wrap_content"
                         android:text="0.8 s"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -417,7 +447,7 @@
                     android:layout_height="wrap_content"
                     android:text=">"
                     android:textSize="18sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_gravity="center_vertical" />
 
             </LinearLayout>
@@ -468,14 +498,14 @@
                             android:text="Configuración General"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="@android:color/black" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Moneda y exportación"
                             android:textSize="14sp"
-                            android:textColor="@android:color/darker_gray" />
+                            android:textColor="?attr/colorOnSurface" />
 
                     </LinearLayout>
 
@@ -484,7 +514,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@android:color/darker_gray" />
+                    android:background="?attr/colorOnSurface" />
 
                 <!-- Export data row -->
                 <LinearLayout
@@ -503,7 +533,7 @@
                         android:layout_weight="1"
                         android:text="Exportar datos"
                         android:textSize="14sp"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/exportDataHint"
@@ -511,7 +541,7 @@
                         android:layout_height="wrap_content"
                         android:text="JSON"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
 
                 <!-- Currency selector row -->
@@ -531,7 +561,7 @@
                         android:layout_weight="1"
                         android:text="Moneda"
                         android:textSize="14sp"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/currencyValue"
@@ -539,7 +569,7 @@
                         android:layout_height="wrap_content"
                         android:text="S/"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
 
                 <!-- Export format selector row -->
@@ -559,7 +589,7 @@
                         android:layout_weight="1"
                         android:text="Formato de exportación"
                         android:textSize="14sp"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/exportFormatValue"
@@ -567,7 +597,7 @@
                         android:layout_height="wrap_content"
                         android:text="CSV"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -613,14 +643,14 @@
                         android:text="Acerca de Kolki"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/black" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Versión 1.0 - Rastreador de gastos"
                         android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="?attr/colorOnSurface" />
 
                 </LinearLayout>
 
@@ -629,7 +659,7 @@
                     android:layout_height="wrap_content"
                     android:text=">"
                     android:textSize="18sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_gravity="center_vertical" />
 
             </LinearLayout>
@@ -657,7 +687,8 @@
                     android:layout_weight="1"
                     android:text="Restablecer a valores predeterminados"
                     android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/resetDefaultsButton"

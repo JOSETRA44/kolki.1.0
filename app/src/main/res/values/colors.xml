@@ -18,4 +18,10 @@
     <color name="border_light">#EDF2F7</color>
     <color name="income_green">#2E7D32</color>
     <color name="expense_red">#C62828</color>
+
+    <!-- Light mode specific for cards/comments (overridden in -night) -->
+    <color name="comment_text_color">#666666</color>
+    <color name="card_menu_tint">#FF000000</color>
+    <color name="card_stroke_yellow">#00000000</color>
+    <color name="fab_color">#6200EE</color>
 </resources>
