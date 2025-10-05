@@ -4,7 +4,6 @@
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Android 14+ foreground service for microphone -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -20,8 +19,7 @@
         android:theme="@style/Theme.Kolki">
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -36,6 +34,7 @@
             android:theme="@style/Theme.AppCompat.Dialog"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
+            tools:targetApi="o_mr1"
             android:launchMode="singleTop"
             android:excludeFromRecents="true" />
         

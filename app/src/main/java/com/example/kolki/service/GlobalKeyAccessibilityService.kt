@@ -2,24 +2,16 @@ package com.example.kolki.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.example.kolki.data.SimpleExpense
 import com.example.kolki.data.SimpleExpenseStorage
 import com.example.kolki.repository.ExpenseRepository
 import com.example.kolki.speech.ExpenseVoiceParser
-import com.example.kolki.speech.SimpleSpeechRecognizer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 class GlobalKeyAccessibilityService : AccessibilityService() {
@@ -27,15 +19,11 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
     private lateinit var prefs: SharedPreferences
     private lateinit var repository: ExpenseRepository
     private lateinit var voiceParser: ExpenseVoiceParser
-    private var speechRecognizer: SimpleSpeechRecognizer? = null
-
     private var lastKeyTimes = mutableListOf<Long>()
     private var listening = AtomicBoolean(false)
     private var lastLaunchAt: Long = 0L
-    private var autoSaveJob: Job? = null
     private lateinit var notifManager: NotificationManager
     private val channelId = "kolki_voice_channel"
-    private val notifIdListening = 2001
     private val notifIdSaved = 2002
 
     override fun onServiceConnected() {
@@ -117,21 +105,13 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
     override fun onInterrupt() { }
 
     private fun createChannelIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Kolki Voz", NotificationManager.IMPORTANCE_LOW)
-            channel.description = "Escucha y guardado por voz"
-            notifManager.createNotificationChannel(channel)
-        }
+        // Min SDK is 26, so channel APIs are always available
+        val channel = NotificationChannel(channelId, "Kolki Voz", NotificationManager.IMPORTANCE_LOW)
+        channel.description = "Escucha y guardado por voz"
+        notifManager.createNotificationChannel(channel)
     }
 
-    private fun buildListeningNotification(): Notification {
-        return NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("Kolki")
-            .setContentText("Escuchando...")
-            .setOngoing(true)
-            .build()
-    }
+    // (No se usa actualmente)
 
     private fun postSavedNotification(text: String) {
         val notif = NotificationCompat.Builder(this, channelId)
