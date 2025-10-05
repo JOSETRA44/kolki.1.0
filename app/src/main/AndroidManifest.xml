@@ -37,7 +37,7 @@
             tools:targetApi="o_mr1"
             android:launchMode="singleTop"
             android:excludeFromRecents="true" />
-        
+
         <service
             android:name=".service.VolumeKeyService"
             android:enabled="true"
@@ -56,6 +56,24 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- Quick Settings Tile to start quick voice -->
+        <service
+            android:name=".service.QuickVoiceTileService"
+            android:icon="@drawable/ic_coin"
+            android:label="Kolki"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Foreground recognizer service for reliable background capture -->
+        <service
+            android:name=".service.RecognizerService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 
 </manifest>
