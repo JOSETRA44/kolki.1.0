@@ -23,6 +23,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
     private var audioManager: AudioManager? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var previousAudioMode: Int? = null
+    private var retriedOnce: Boolean = false
     
     companion object {
         private const val TAG = "SimpleSpeechRecognizer"
@@ -107,6 +108,21 @@ class SimpleSpeechRecognizer(private val context: Context) {
                     releaseAudio()
                     return
                 }
+                // One-time minimal intent retry for intermittent engine issues
+                if (!retriedOnce && (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_NO_MATCH)) {
+                    retriedOnce = true
+                    try {
+                        // Minimal intent: only essentials, avoid extras that some engines reject
+                        val minimal = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                        }
+                        // Try to restart quickly
+                        speechRecognizer?.startListening(minimal)
+                        return
+                    } catch (_: Exception) { /* fall through to error */ }
+                }
                 val errorMessage = when (error) {
                     SpeechRecognizer.ERROR_AUDIO -> "Error de audio"
                     SpeechRecognizer.ERROR_CLIENT -> "Error del cliente"
@@ -170,6 +186,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
             }
             val localeTag = try { deviceLocale.toLanguageTag() } catch (_: Exception) { deviceLocale.toString() }
             val preferOffline = prefs.getBoolean("voice_prefer_offline", false)
+            retriedOnce = false
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeTag)
@@ -182,10 +199,10 @@ class SimpleSpeechRecognizer(private val context: Context) {
                 // Prefer offline results (configurable)
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline)
                 // More tolerant timings for partials and natural pauses (ms)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2200)
                 // Allow a bit more minimum speaking time
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1300)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500)
             }
             
             try {
@@ -213,6 +230,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
         speechRecognizer = null
     }
     
+    @Suppress("unused")
     fun isListening(): Boolean = isListening
 
     private fun releaseAudio() {
