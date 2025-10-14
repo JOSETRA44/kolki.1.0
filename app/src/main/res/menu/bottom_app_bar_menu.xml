@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/navigation_expenses"
+        android:icon="@drawable/ic_expenses_24"
+        android:title="Gastos"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/navigation_statistics"
+        android:icon="@drawable/ic_statistics_24"
+        android:title="Estadísticas"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/navigation_profile"
+        android:icon="@drawable/ic_profile_24"
+        android:title="Perfil"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/navigation_settings"
+        android:icon="@drawable/ic_settings_24"
+        android:title="Ajustes"
+        app:showAsAction="always" />
+</menu>

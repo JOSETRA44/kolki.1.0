@@ -13,9 +13,10 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.example.kolki.databinding.ActivityMainBinding
 import com.example.kolki.service.VolumeKeyService
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.color.MaterialColors
 import androidx.core.view.WindowInsetsControllerCompat
 
@@ -50,17 +51,22 @@ class MainActivity : AppCompatActivity() {
             binding = ActivityMainBinding.inflate(layoutInflater)
             setContentView(binding.root)
 
-            val navView: BottomNavigationView = binding.navView
-
             val navController = findNavController(R.id.nav_host_fragment_activity_main)
             val appBarConfiguration = AppBarConfiguration(
                 setOf(
-                    R.id.navigation_expenses, R.id.navigation_statistics, R.id.navigation_add_expense, 
-                    R.id.navigation_profile, R.id.navigation_settings
+                    R.id.navigation_expenses,
+                    R.id.navigation_statistics,
+                    R.id.navigation_profile,
+                    R.id.navigation_settings
                 )
             )
             setupActionBarWithNavController(navController, appBarConfiguration)
+
+            val navView: BottomNavigationView = binding.navView
             navView.setupWithNavController(navController)
+
+            val fab: FloatingActionButton = findViewById(R.id.fab_main)
+            fab.setOnClickListener { navController.navigate(R.id.navigation_add_expense) }
             // Ensure status bar matches app primary color to avoid white strip
             val primary = MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, android.graphics.Color.BLACK)
             window.statusBarColor = primary
@@ -69,8 +75,6 @@ class MainActivity : AppCompatActivity() {
             
             // Request necessary permissions
             requestPermissions()
-
-            // FAB removed: center bottom navigation '+' handles add action
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error in onCreate: ${e.message}", e)
             finish()
@@ -79,14 +83,12 @@ class MainActivity : AppCompatActivity() {
     
     private fun requestPermissions() {
         val basePermissions = mutableListOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.RECORD_AUDIO
         )
         // Android 13+ requires runtime POST_NOTIFICATIONS
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             basePermissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-
         val permissionsToRequest = basePermissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }

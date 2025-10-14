@@ -11,10 +11,13 @@
         android:icon="@drawable/ic_statistics_24"
         android:title="Estadísticas" />
 
+    <!-- Center placeholder to create equal spacing around FAB -->
     <item
-        android:id="@+id/navigation_add_expense"
-        android:icon="@drawable/ic_add_outline_24"
-        android:title="Agregar" />
+        android:id="@+id/navigation_placeholder_center"
+        android:enabled="false"
+        android:checkable="false"
+        android:icon="@drawable/ic_placeholder_24"
+        android:title="" />
 
     <item
         android:id="@+id/navigation_profile"
