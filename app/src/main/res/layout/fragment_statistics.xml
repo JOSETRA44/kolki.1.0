@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Top Summary: two bold cards -->
+        <!-- Top Summary: two bold cards (visually unified with a divider) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -24,7 +24,7 @@
                 android:id="@+id/summaryToggleCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="0dp"
                 app:cardCornerRadius="0dp"
                 app:cardUseCompatPadding="true"
                 app:cardElevation="8dp"
@@ -59,9 +59,40 @@
 
                 </LinearLayout>
 
+                <!-- Segmented progress: Red (spent) + Green (remaining) -->
+                <LinearLayout
+                    android:id="@+id/summaryProgressContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="#22000000"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/summaryProgressRed"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.5"
+                        android:background="@color/expense_red" />
+
+                    <View
+                        android:id="@+id/summaryProgressGreen"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.5"
+                        android:background="@color/income_green" />
+
+                </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
-        
+            <!-- Thin divider to visually unify both cards while keeping separate touch zones -->
+            <View
+                android:id="@+id/topCardsDivider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#33000000" />
 
             <!-- Budget Hint Card (moved here) -->
             <com.google.android.material.card.MaterialCardView
@@ -77,28 +108,84 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:gravity="center_vertical">
+                    android:orientation="vertical"
+                    android:padding="10dp">
 
-                    <TextView
-                        android:id="@+id/budgetTitleText"
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="lo que te queda"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/budgetHintText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/expense_red"
-                        tools:text="S/ 25" />
+                        <TextView
+                            android:id="@+id/budgetTitleText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="lo que te queda"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <TextView
+                            android:id="@+id/budgetHintText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/expense_red"
+                            tools:text="S/ 25" />
+                    </LinearLayout>
+
+                    <!-- Daily budget bar (visible when showing daily) -->
+                    <LinearLayout
+                        android:id="@+id/budgetDailyBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="6dp"
+                        android:background="#22000000"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:id="@+id/budgetDailyRed"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:background="@color/expense_red" />
+
+                        <View
+                            android:id="@+id/budgetDailyGreen"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:background="@color/income_green" />
+                    </LinearLayout>
+
+                    <!-- Monthly budget bar (visible when showing monthly) -->
+                    <LinearLayout
+                        android:id="@+id/budgetMonthlyBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="6dp"
+                        android:background="#22000000"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:id="@+id/budgetMonthlyRed"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:background="@color/expense_red" />
+
+                        <View
+                            android:id="@+id/budgetMonthlyGreen"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:background="@color/income_green" />
+                    </LinearLayout>
 
                 </LinearLayout>
 

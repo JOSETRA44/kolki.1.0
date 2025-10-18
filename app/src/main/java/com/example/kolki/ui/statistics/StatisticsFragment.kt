@@ -64,6 +64,13 @@ class StatisticsFragment : Fragment() {
         return binding.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh summary and budget bars in case data or settings changed
+        updateSummaryCard()
+        updateBudgetHint()
+    }
+
     private fun setupVisualizationToggle() {
         // Default: show Circular (pie)
         binding.vizPieButton.isChecked = true
@@ -107,6 +114,9 @@ class StatisticsFragment : Fragment() {
     private fun updateSummaryCard() {
         val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryTitleText) ?: return
         val valueTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.summaryValueText) ?: return
+        val progContainer = view?.findViewById<android.view.View>(com.example.kolki.R.id.summaryProgressContainer)
+        val progRed = view?.findViewById<android.view.View>(com.example.kolki.R.id.summaryProgressRed)
+        val progGreen = view?.findViewById<android.view.View>(com.example.kolki.R.id.summaryProgressGreen)
 
         val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
@@ -123,6 +133,26 @@ class StatisticsFragment : Fragment() {
             titleTv.text = "Este Mes (gasto)"
             valueTv.text = "$symbol $amount"
             valueTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red))
+
+            // Progress: For month view, relate to Budget (monthly/custom). Red = monthSpent, Green = remaining of budget
+            val budgetAmount = prefs.getFloat("budget_amount", 0f).toDouble()
+            val total = budgetAmount.coerceAtLeast(0.0)
+            if (total > 0) {
+                progContainer?.visibility = android.view.View.VISIBLE
+                val redP = (monthSpent / total).coerceIn(0.0, 1.0).toFloat()
+                val greenP = (1f - redP).coerceIn(0f, 1f)
+                (progRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                    it.weight = if (redP <= 0f) 0f else redP
+                    progRed.layoutParams = it
+                }
+                (progGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                    it.weight = if (greenP <= 0f) 0f else greenP
+                    progGreen.layoutParams = it
+                }
+                progContainer?.requestLayout()
+            } else {
+                progContainer?.visibility = android.view.View.GONE
+            }
         } else {
             // Saldo Restante (global): ingresos - gastos
             val remaining = storage.getRemaining()
@@ -130,6 +160,27 @@ class StatisticsFragment : Fragment() {
             titleTv.text = "Saldo Restante"
             valueTv.text = "$symbol $amount"
             valueTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.income_green))
+
+            // Progress: red = total gastado global, green = remaining
+            val totalSpent = storage.getSnapshot().sumOf { it.amount }.coerceAtLeast(0.0)
+            val greenVal = remaining.coerceAtLeast(0.0)
+            val total = totalSpent + greenVal
+            if (total > 0) {
+                progContainer?.visibility = android.view.View.VISIBLE
+                val redP = (totalSpent / total).coerceIn(0.0, 1.0).toFloat()
+                val greenP = (1f - redP).coerceIn(0f, 1f)
+                (progRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                    it.weight = if (redP <= 0f) 0f else redP
+                    progRed.layoutParams = it
+                }
+                (progGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                    it.weight = if (greenP <= 0f) 0f else greenP
+                    progGreen.layoutParams = it
+                }
+                progContainer?.requestLayout()
+            } else {
+                progContainer?.visibility = android.view.View.GONE
+            }
         }
     }
 
@@ -185,6 +236,12 @@ class StatisticsFragment : Fragment() {
         val budgetCard = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard) ?: return
         val titleTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetTitleText) ?: return
         val hintTv = view?.findViewById<android.widget.TextView>(com.example.kolki.R.id.budgetHintText) ?: return
+        val barDaily = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetDailyBar)
+        val barDailyRed = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetDailyRed)
+        val barDailyGreen = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetDailyGreen)
+        val barMonthly = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetMonthlyBar)
+        val barMonthlyRed = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetMonthlyRed)
+        val barMonthlyGreen = view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetMonthlyGreen)
 
         val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
@@ -195,6 +252,8 @@ class StatisticsFragment : Fragment() {
         if (amount <= 0.0) {
             titleTv.text = "Presupuesto"
             hintTv.text = "No tiene presupuesto suficiente"
+            barDaily?.visibility = android.view.View.GONE
+            barMonthly?.visibility = android.view.View.GONE
             return
         }
 
@@ -311,6 +370,23 @@ class StatisticsFragment : Fragment() {
                     view?.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)?.animate()?.rotation(0f)?.setDuration(0)?.start()
                 }
             } catch (_: Exception) {}
+
+            // Show daily bar, hide monthly
+            barDaily?.visibility = android.view.View.VISIBLE
+            barMonthly?.visibility = android.view.View.GONE
+            // Percent spent today vs baseline per-day (avoid div by zero)
+            val denom = if (baselinePerDay > 0) baselinePerDay.toDouble() else 1.0
+            val pct = (todaySpent / denom).coerceIn(0.0, 1.0).toFloat()
+            val left = (1f - pct).coerceIn(0f, 1f)
+            (barDailyRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                it.weight = if (pct <= 0f) 0f else pct
+                barDailyRed.layoutParams = it
+            }
+            (barDailyGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                it.weight = if (left <= 0f) 0f else left
+                barDailyGreen.layoutParams = it
+            }
+            barDaily?.requestLayout()
         } else {
             titleTv.text = "Presupuesto (Mes)"
             // Solo cantidad en rojo (sin texto largo)
@@ -319,6 +395,22 @@ class StatisticsFragment : Fragment() {
                 hintTv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), com.example.kolki.R.color.expense_red))
                 hintTv.clearAnimation()
             } catch (_: Exception) {}
+
+            // Show monthly bar, hide daily. Red=spent/amount, Green=remaining/amount
+            barDaily?.visibility = android.view.View.GONE
+            barMonthly?.visibility = android.view.View.VISIBLE
+            val denom = if (amount > 0.0) amount else 1.0
+            val pct = (spent / denom).coerceIn(0.0, 1.0).toFloat()
+            val left = (1f - pct).coerceIn(0f, 1f)
+            (barMonthlyRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                it.weight = if (pct <= 0f) 0f else pct
+                barMonthlyRed.layoutParams = it
+            }
+            (barMonthlyGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
+                it.weight = if (left <= 0f) 0f else left
+                barMonthlyGreen.layoutParams = it
+            }
+            barMonthly?.requestLayout()
         }
     }
 
