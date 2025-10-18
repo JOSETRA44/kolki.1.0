@@ -17,17 +17,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="6dp">
 
             <!-- Combined toggle: Este Mes / Saldo Restante -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/summaryToggleCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                app:cardCornerRadius="16dp"
+                android:layout_marginBottom="6dp"
+                app:cardCornerRadius="0dp"
                 app:cardUseCompatPadding="true"
-                app:cardElevation="8dp">
+                app:cardElevation="8dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/card_stroke_yellow_selector">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -66,9 +68,11 @@
                 android:id="@+id/budgetCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="0dp"
                 app:cardUseCompatPadding="true"
-                app:cardElevation="8dp">
+                app:cardElevation="8dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/card_stroke_yellow_selector">
 
                 <LinearLayout
                     android:layout_width="match_parent"

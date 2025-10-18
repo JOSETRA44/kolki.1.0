@@ -44,6 +44,7 @@
         android:contentDescription="Agregar"
         app:srcCompat="@drawable/ic_add_outline_24"
         app:layout_anchor="@id/nav_view"
-        app:layout_anchorGravity="top|center" />
+        app:layout_anchorGravity="top|center"
+        android:translationY="6dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

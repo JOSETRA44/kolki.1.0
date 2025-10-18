@@ -337,18 +337,28 @@ class StatisticsFragment : Fragment() {
         observeViewModel()
 
         // Presupuesto: inicializar y toggle al tocar la tarjeta
-        view.findViewById<android.view.View>(com.example.kolki.R.id.budgetCard)?.setOnClickListener {
+        val budgetCard = view.findViewById<com.google.android.material.card.MaterialCardView>(com.example.kolki.R.id.budgetCard)
+        budgetCard?.setOnClickListener {
             showBudgetToday = !showBudgetToday
+            // toggle visual selection
+            budgetCard.isChecked = !budgetCard.isChecked
             updateBudgetHint()
         }
+        // initialize state & selection
         updateBudgetHint()
+        budgetCard?.isChecked = showBudgetToday
 
         // Summary toggle card (Este Mes / Saldo restante)
-        view.findViewById<android.view.View>(com.example.kolki.R.id.summaryToggleCard)?.setOnClickListener {
+        val summaryCard = view.findViewById<com.google.android.material.card.MaterialCardView>(com.example.kolki.R.id.summaryToggleCard)
+        summaryCard?.setOnClickListener {
             showMonthOnSummary = !showMonthOnSummary
+            // toggle visual selection
+            summaryCard.isChecked = !summaryCard.isChecked
             updateSummaryCard()
         }
+        // initialize state & selection
         updateSummaryCard()
+        summaryCard?.isChecked = showMonthOnSummary
 
         // Deep Analysis: navigate to new screen
         view.findViewById<android.view.View>(com.example.kolki.R.id.deepAnalysisButton)?.setOnClickListener {

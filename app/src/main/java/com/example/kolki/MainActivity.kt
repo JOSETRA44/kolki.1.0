@@ -7,12 +7,17 @@ import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.ui.NavigationUI
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import android.os.SystemClock
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.example.kolki.databinding.ActivityMainBinding
@@ -23,6 +28,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var appBarConfiguration: AppBarConfiguration
+    private var navPerfStart: Long = 0L
+    private var navTargetId: Int = 0
+    private val fragmentInflateStarts = mutableMapOf<String, Long>()
     
     companion object {
         private const val REQUEST_PERMISSIONS = 100
@@ -52,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             setContentView(binding.root)
 
             val navController = findNavController(R.id.nav_host_fragment_activity_main)
-            val appBarConfiguration = AppBarConfiguration(
+            appBarConfiguration = AppBarConfiguration(
                 setOf(
                     R.id.navigation_expenses,
                     R.id.navigation_statistics,
@@ -64,6 +73,42 @@ class MainActivity : AppCompatActivity() {
 
             val navView: BottomNavigationView = binding.navView
             navView.setupWithNavController(navController)
+            // Custom timing + ensure selecting a tab shows its root
+            navView.setOnItemSelectedListener { item ->
+                navPerfStart = SystemClock.elapsedRealtime()
+                navTargetId = item.itemId
+                // Pop to the tab's root if it exists in the back stack
+                navController.popBackStack(item.itemId, false)
+                // Navigate with state restoration
+                val opts = androidx.navigation.navOptions {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                return@setOnItemSelectedListener try {
+                    // If we're already at the destination after popBackStack, handled = true
+                    if (navController.currentDestination?.id == item.itemId) true
+                    else {
+                        navController.navigate(item.itemId, null, opts)
+                        true
+                    }
+                } catch (_: Exception) {
+                    navPerfStart = 0L
+                    false
+                }
+            }
+            // Reselection returns to the tab's root (useful si estamos en subpantallas)
+            navView.setOnItemReselectedListener { item ->
+                navController.popBackStack(item.itemId, false)
+            }
+
+            // Log when destination actually changes to compute elapsed
+            navController.addOnDestinationChangedListener { _, destination, _ ->
+                if (navPerfStart > 0 && destination.id == navTargetId) {
+                    val elapsed = SystemClock.elapsedRealtime() - navPerfStart
+                    android.util.Log.d("NavPerf", "Destination ${destination.displayName} in ${elapsed}ms")
+                    navPerfStart = 0L
+                }
+            }
 
             val fab: FloatingActionButton = findViewById(R.id.fab_main)
             fab.setOnClickListener { navController.navigate(R.id.navigation_add_expense) }
@@ -75,6 +120,28 @@ class MainActivity : AppCompatActivity() {
             
             // Request necessary permissions
             requestPermissions()
+
+            // Fragment lifecycle timing: measure inflate + setup cost
+            supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks() {
+                override fun onFragmentPreCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) {
+                    fragmentInflateStarts[f::class.java.name] = SystemClock.elapsedRealtime()
+                }
+                override fun onFragmentViewCreated(fm: FragmentManager, f: Fragment, v: android.view.View, savedInstanceState: Bundle?) {
+                    fragmentInflateStarts.remove(f::class.java.name)?.let { start ->
+                        val elapsed = SystemClock.elapsedRealtime() - start
+                        android.util.Log.d("FragPerf", "${f::class.java.simpleName} view created in ${elapsed}ms")
+                    }
+                }
+            }, true)
+
+            // Hardware back: delegate to NavController with explicit callback
+            onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (!navController.navigateUp()) {
+                        finish()
+                    }
+                }
+            })
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error in onCreate: ${e.message}", e)
             finish()
@@ -117,5 +184,10 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("MainActivity", "Error in onKeyDown: ${e.message}", e)
             super.onKeyDown(keyCode, event)
         }
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        val navController = findNavController(R.id.nav_host_fragment_activity_main)
+        return NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp()
     }
 }
