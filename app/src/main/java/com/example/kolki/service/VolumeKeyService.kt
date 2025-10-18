@@ -24,6 +24,9 @@ class VolumeKeyService : Service() {
     private lateinit var voiceParser: ExpenseVoiceParser
     private lateinit var repository: ExpenseRepository
     private val serviceScope = CoroutineScope(Dispatchers.Main)
+    private var isSessionActive: Boolean = false
+    private var lastSessionEndTime: Long = 0L
+    private val cooldownMs: Long = 800L
     
     override fun onCreate() {
         super.onCreate()
@@ -50,6 +53,11 @@ class VolumeKeyService : Service() {
     private fun handleVolumeKeyPress() {
         val currentTime = System.currentTimeMillis()
         
+        // Enforce cooldown after a session ends to avoid rapid re-entry
+        if (currentTime - lastSessionEndTime < cooldownMs) {
+            return
+        }
+
         if (currentTime - lastVolumeKeyTime < doubleTapThreshold) {
             // Double tap detected - start voice recognition
             startQuickVoiceRecognition()
@@ -59,6 +67,8 @@ class VolumeKeyService : Service() {
     }
     
     private fun startQuickVoiceRecognition() {
+        if (isSessionActive) return
+        isSessionActive = true
         speechRecognizer.startListening(object : SimpleSpeechRecognizer.SpeechCallback {
             override fun onResult(text: String) {
                 handleVoiceResult(text)
@@ -66,6 +76,9 @@ class VolumeKeyService : Service() {
             
             override fun onError(error: String) {
                 // Handle error silently or show notification
+                try { speechRecognizer.cleanup() } catch (_: Exception) {}
+                isSessionActive = false
+                lastSessionEndTime = System.currentTimeMillis()
                 stopSelf()
             }
             
@@ -76,7 +89,10 @@ class VolumeKeyService : Service() {
         
         // Auto-stop after 10 seconds
         Handler(Looper.getMainLooper()).postDelayed({
-            speechRecognizer.stopListening()
+            try { speechRecognizer.stopListening() } catch (_: Exception) {}
+            try { speechRecognizer.cleanup() } catch (_: Exception) {}
+            isSessionActive = false
+            lastSessionEndTime = System.currentTimeMillis()
             stopSelf()
         }, 10000)
     }
@@ -91,12 +107,18 @@ class VolumeKeyService : Service() {
             }
         }
         
-        speechRecognizer.stopListening()
+        try { speechRecognizer.stopListening() } catch (_: Exception) {}
+        try { speechRecognizer.cleanup() } catch (_: Exception) {}
+        isSessionActive = false
+        lastSessionEndTime = System.currentTimeMillis()
         stopSelf()
     }
     
     override fun onDestroy() {
         super.onDestroy()
-        speechRecognizer.stopListening()
+        try { speechRecognizer.stopListening() } catch (_: Exception) {}
+        try { speechRecognizer.cleanup() } catch (_: Exception) {}
+        isSessionActive = false
+        lastSessionEndTime = System.currentTimeMillis()
     }
 }

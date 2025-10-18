@@ -100,6 +100,7 @@ class SimpleSpeechRecognizer(private val context: Context) {
             
             override fun onError(error: Int) {
                 isListening = false
+                Log.e(TAG, "onError code=$error")
                 // If we have a partial, surface it as a result instead of error
                 if (error == SpeechRecognizer.ERROR_NO_MATCH && !lastPartial.isNullOrBlank()) {
                     val text = lastPartial!!
@@ -108,17 +109,15 @@ class SimpleSpeechRecognizer(private val context: Context) {
                     releaseAudio()
                     return
                 }
-                // One-time minimal intent retry for intermittent engine issues
-                if (!retriedOnce && (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_NO_MATCH)) {
+                // Only allow a minimal retry for NO_MATCH (no partials), not for CLIENT/BUSY
+                if (!retriedOnce && error == SpeechRecognizer.ERROR_NO_MATCH) {
                     retriedOnce = true
                     try {
-                        // Minimal intent: only essentials, avoid extras that some engines reject
                         val minimal = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                         }
-                        // Try to restart quickly
                         speechRecognizer?.startListening(minimal)
                         return
                     } catch (_: Exception) { /* fall through to error */ }
@@ -136,8 +135,13 @@ class SimpleSpeechRecognizer(private val context: Context) {
                     else -> "Error desconocido: $error"
                 }
                 Log.e(TAG, "Speech recognition error: $errorMessage")
+                // For CLIENT/BUSY, ensure full cleanup to unlock the engine
+                if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+                    try { cleanup() } catch (_: Exception) {}
+                } else {
+                    releaseAudio()
+                }
                 callback.onError(errorMessage)
-                releaseAudio()
             }
             
             override fun onResults(results: Bundle?) {

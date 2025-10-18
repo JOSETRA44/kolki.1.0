@@ -112,7 +112,11 @@ class QuickVoiceActivity : AppCompatActivity() {
             finish()
             return
         }
-        speechRecognizer?.startListening(object : SimpleSpeechRecognizer.SpeechCallback {
+        speechRecognizer?.startListening(createSpeechCallback())
+    }
+
+    private fun createSpeechCallback(): SimpleSpeechRecognizer.SpeechCallback {
+        return object : SimpleSpeechRecognizer.SpeechCallback {
             override fun onResult(text: String) {
                 timeoutJob?.cancel()
                 isHandlingResult = true
@@ -126,10 +130,13 @@ class QuickVoiceActivity : AppCompatActivity() {
                     retriedOnce = true
                     timeoutJob?.cancel()
                     statusText.text = getString(R.string.quick_listening)
-                    // retry once
-                    speechRecognizer?.cleanup()
-                    speechRecognizer = SimpleSpeechRecognizer(this@QuickVoiceActivity)
-                    speechRecognizer?.startListening(this)
+                    // retry once with small backoff to let engine settle
+                    try { speechRecognizer?.cleanup() } catch (_: Exception) {}
+                    scope.launch {
+                        delay(200)
+                        speechRecognizer = SimpleSpeechRecognizer(this@QuickVoiceActivity)
+                        speechRecognizer?.startListening(createSpeechCallback())
+                    }
                     return
                 }
                 timeoutJob?.cancel()
@@ -141,7 +148,7 @@ class QuickVoiceActivity : AppCompatActivity() {
                 statusText.text = partialText
                 lastPartialText = partialText
             }
-        })
+        }
     }
 
     private fun handleResult(text: String) {
