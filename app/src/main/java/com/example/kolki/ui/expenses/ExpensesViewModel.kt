@@ -7,21 +7,22 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.kolki.data.SimpleExpense
 import com.example.kolki.data.SimpleIncome
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import kotlinx.coroutines.launch
 
 class ExpensesViewModel(application: Application) : AndroidViewModel(application) {
     
     private val repository: ExpenseRepository
-    private val storage: SimpleExpenseStorage
+    private val storage: ExpenseStoragePort
     
     val expenses: LiveData<List<SimpleExpense>>
     val categories: LiveData<List<String>>
     val remaining: LiveData<Double>
     
     init {
-        storage = SimpleExpenseStorage(application)
+        storage = RoomStorageAdapter(application)
         repository = ExpenseRepository(storage)
         expenses = repository.getAllExpenses().asLiveData()
         categories = repository.getAllCategories().asLiveData()

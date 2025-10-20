@@ -8,9 +8,15 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
+import com.google.gson.Gson
 import com.example.kolki.util.BudgetLog
 import com.example.kolki.databinding.FragmentProfileBinding
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
 
@@ -177,14 +183,22 @@ class ProfileFragment : Fragment() {
             startExport()
         }
 
-        // Show totals: incomes and expenses
-        val storage = SimpleExpenseStorage(requireContext())
+        val storage: ExpenseStoragePort = RoomStorageAdapter(requireContext())
         val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
         val symbol = prefs.getString("currency_symbol", "S/") ?: "S/"
-        val incomeTotal = storage.getIncomeTotal()
-        val expenseTotal = storage.getTotalAmount()
-        binding.incomeTotalText.text = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", incomeTotal)}"
-        binding.expenseTotalText.text = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", expenseTotal)}"
+        viewLifecycleOwner.lifecycleScope.launch {
+            combine(
+                storage.expenses,
+                storage.incomes
+            ) { exps, incs ->
+                val expenseTotal = exps.sumOf { it.amount }
+                val incomeTotal = incs.sumOf { it.amount }
+                expenseTotal to incomeTotal
+            }.collectLatest { (expenseTotal, incomeTotal) ->
+                binding.incomeTotalText.text = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", incomeTotal)}"
+                binding.expenseTotalText.text = "$symbol ${String.format(java.util.Locale.getDefault(), "%.2f", expenseTotal)}"
+            }
+        }
 
         // Tap totals to export (separate datasets)
         binding.incomeTotalText.setOnClickListener {
@@ -268,10 +282,10 @@ class ProfileFragment : Fragment() {
         try {
             val prefs = requireContext().getSharedPreferences("kolki_prefs", android.content.Context.MODE_PRIVATE)
             val fmt = prefs.getString("export_format", "CSV") ?: "CSV"
-            val storage = SimpleExpenseStorage(requireContext())
+            val adapter: ExpenseStoragePort = RoomStorageAdapter(requireContext())
             val data = when (pendingExportType) {
-                ExportType.EXPENSES -> if (fmt == "CSV") storage.exportExpensesCsv() else storage.exportExpensesJson()
-                ExportType.INCOMES -> if (fmt == "CSV") storage.exportIncomesCsv() else storage.exportIncomesJson()
+                ExportType.EXPENSES -> if (fmt == "CSV") buildExpensesCsv(adapter) else Gson().toJson(adapter.getSnapshot())
+                ExportType.INCOMES -> if (fmt == "CSV") buildIncomesCsv(adapter) else Gson().toJson(adapter.getIncomeSnapshot())
             }
             val resolver = requireContext().contentResolver
             val out = try { resolver.openOutputStream(uri, "w") } catch (_: Throwable) { resolver.openOutputStream(uri) }
@@ -287,5 +301,48 @@ class ProfileFragment : Fragment() {
         } catch (e: Exception) {
             android.widget.Toast.makeText(requireContext(), "Error al exportar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun buildExpensesCsv(storage: ExpenseStoragePort): String {
+        val sb = StringBuilder()
+        sb.append("id,category,originalCategory,amount,comment,date,createdAt\n")
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        storage.getSnapshot().forEach { e ->
+            val fields = listOf(
+                e.id.toString(),
+                e.category,
+                (e.originalCategory ?: ""),
+                e.amount.toString(),
+                e.comment ?: "",
+                dateFormat.format(e.date),
+                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(e.createdAt))
+            )
+            sb.append(fields.joinToString(",") { csvEscape(it) }).append('\n')
+        }
+        return sb.toString()
+    }
+
+    private fun buildIncomesCsv(storage: ExpenseStoragePort): String {
+        val sb = StringBuilder()
+        sb.append("id,emitter,amount,date,createdAt\n")
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        storage.getIncomeSnapshot().forEach { i ->
+            val fields = listOf(
+                i.id.toString(),
+                i.emitter,
+                i.amount.toString(),
+                dateFormat.format(i.date),
+                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(i.createdAt))
+            )
+            sb.append(fields.joinToString(",") { csvEscape(it) }).append('\n')
+        }
+        return sb.toString()
+    }
+
+    private fun csvEscape(s: String): String {
+        var v = s
+        val mustQuote = v.contains(',') || v.contains('"') || v.contains('\n') || v.contains('\r')
+        if (v.contains('"')) v = v.replace("\"", "\"\"")
+        return if (mustQuote) "\"$v\"" else v
     }
 }

@@ -24,6 +24,7 @@ import com.example.kolki.databinding.ActivityMainBinding
 import com.example.kolki.service.VolumeKeyService
 import com.google.android.material.color.MaterialColors
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.kolki.data.LegacyMigrationRunner
 
 class MainActivity : AppCompatActivity() {
 
@@ -57,6 +58,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         try {
+            // Run legacy -> Room migration early with logs
+            try {
+                android.util.Log.d("LegacyMigration", "runIfNeeded: start")
+                LegacyMigrationRunner.runIfNeeded(applicationContext)
+                android.util.Log.d("LegacyMigration", "runIfNeeded: end")
+            } catch (e: Exception) {
+                android.util.Log.e("LegacyMigration", "runIfNeeded error: ${e.message}", e)
+            }
             binding = ActivityMainBinding.inflate(layoutInflater)
             setContentView(binding.root)
 

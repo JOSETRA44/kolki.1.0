@@ -12,7 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
+import com.google.gson.Gson
+import com.example.kolki.data.LegacyMigrationRunner
 import com.example.kolki.databinding.FragmentSettingsBinding
 
 class SettingsFragment : Fragment() {
@@ -179,6 +182,13 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        try {
+            android.util.Log.d("LegacyMigration", "SettingsFragment: checking migration on view created")
+            LegacyMigrationRunner.runIfNeeded(requireContext())
+            android.widget.Toast.makeText(requireContext(), "Verificación de migración realizada", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.e("LegacyMigration", "SettingsFragment migration check error: ${e.message}", e)
+        }
         
         loadVoiceAutoSaveSetting()
         loadVoiceAutoSaveDelay()
@@ -525,8 +535,8 @@ class SettingsFragment : Fragment() {
 
     private fun exportToUri(uri: Uri) {
         try {
-            val storage = SimpleExpenseStorage(requireContext())
-            val json = storage.exportJson()
+            val storage: ExpenseStoragePort = RoomStorageAdapter(requireContext())
+            val json = Gson().toJson(storage.getSnapshot())
             requireContext().contentResolver.openOutputStream(uri)?.use { os ->
                 os.write(json.toByteArray(Charsets.UTF_8))
                 os.flush()

@@ -2,14 +2,14 @@ package com.example.kolki.repository
 
 import com.example.kolki.data.SimpleCategoryTotal
 import com.example.kolki.data.SimpleExpense
-import com.example.kolki.data.SimpleExpenseStorage
 import com.example.kolki.data.SimpleIncome
+import com.example.kolki.data.ExpenseStoragePort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import java.util.Date
 
-class ExpenseRepository(private val storage: SimpleExpenseStorage) {
+class ExpenseRepository(private val storage: ExpenseStoragePort) {
     
     fun getAllExpenses(): Flow<List<SimpleExpense>> = storage.expenses
     

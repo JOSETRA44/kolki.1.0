@@ -1,6 +1,6 @@
 # 💰 Kolki - Control de Gastos con Voz
 
-Una aplicación Android moderna para el control de gastos personales con reconocimiento de voz offline usando Vosk.
+Aplicación Android para control de gastos personales con registro por voz y visualizaciones útiles.
 
 ## 🚀 Características Principales
 
@@ -11,16 +11,20 @@ Una aplicación Android moderna para el control de gastos personales con reconoc
 - **Navegación por pestañas**: Gastos, Estadísticas y Perfiles
 
 ### 🎤 Reconocimiento de Voz
-- **Offline**: Usa la librería Vosk para reconocimiento sin internet
+- **Sistema Android**: Usa `SpeechRecognizer` con `RecognitionListener`
 - **Formato natural**: "Comida, 25, almuerzo en la universidad"
 - **Categorías inteligentes**: Reconoce categorías comunes automáticamente
 - **Números en español**: Convierte palabras a números
+- **Estabilidad mejorada**: Limpieza robusta y prevención de sesiones concurrentes del micrófono
 
 ### 📊 Estadísticas y Visualización
-- **Totales por período**: Semanal, mensual, anual
-- **Gastos por categoría**: Con barras de progreso
+- **Totales por período**: Semanal, mensual, anual y rangos personalizados
+- **Distribución por categoría**: Gráfico circular con desglose y drilldown
+- **Barras semanales**: Comparativa por días de la semana
+- **Top tarjetas unificadas**: Dos tarjetas superiores unificadas visualmente con un divider fino, manteniendo zonas táctiles independientes:
+  - Superior (toggle): "Este Mes (gasto)" / "Saldo Restante" con barra segmentada Rojo/Verde.
+  - Inferior (toggle): "Presupuesto (Hoy)" / "Presupuesto (Mes)" con barras horizontales (diaria o mensual) Rojo/Verde.
 - **Gastos recientes**: Lista de últimos movimientos
-- **Filtros y búsqueda**: Para encontrar gastos específicos
 
 ## 🏗️ Arquitectura Técnica
 
@@ -30,10 +34,10 @@ Una aplicación Android moderna para el control de gastos personales con reconoc
 - **Base de datos**: Room (SQLite)
 - **Arquitectura**: MVVM + Repository Pattern
 - **Navegación**: Navigation Component
-- **Reconocimiento de voz**: Vosk Android
+- **Reconocimiento de voz**: Android `SpeechRecognizer`
 - **Concurrencia**: Kotlin Coroutines
 
-### 📁 Estructura del Proyecto
+### 📁 Estructura del Proyecto (simplificada)
 ```
 app/src/main/java/com/example/kolki/
 ├── data/                    # Modelos y base de datos
@@ -46,12 +50,15 @@ app/src/main/java/com/example/kolki/
 ├── ui/                     # Interfaz de usuario
 │   ├── expenses/           # Pantalla principal
 │   ├── statistics/         # Estadísticas
-│   └── profile/            # Configuración
+│   ├── add/                # Agregar gasto (con voz)
+│   ├── quick/              # Overlay rápido por voz
+│   └── profile/            # Perfil
 ├── speech/                 # Reconocimiento de voz
-│   ├── VoiceRecognitionService.kt
+│   ├── SimpleSpeechRecognizer.kt
 │   └── ExpenseVoiceParser.kt
 └── service/                # Servicios de fondo
-    └── VolumeKeyService.kt
+    ├── VolumeKeyService.kt
+    └── RecognizerService.kt
 ```
 
 ## 🎯 Uso de la Aplicación
@@ -76,16 +83,17 @@ app/src/main/java/com/example/kolki/
 3. Se guarda automáticamente
 
 ### 📊 Ver Estadísticas
-- **Totales**: Visualizar gasto total y mensual
-- **Períodos**: Cambiar entre semana, mes, año
-- **Categorías**: Ver distribución por categorías
-- **Recientes**: Lista de últimos gastos
+- **Totales y saldo**: Toggle en la tarjeta superior
+- **Períodos**: Semana, mes y rango
+- **Presupuesto**: Toggle diario/mensual con barras Rojo/Verde
+- **Categorías**: Distribución con drilldown
+- **Recientes**: Últimos gastos
 
 ### ⚙️ Configuración
-- **Reconocimiento de voz**: Activar/desactivar
-- **Moneda**: Cambiar entre Soles, Dólares, Euros
-- **Exportar datos**: Generar archivo CSV
-- **Limpiar datos**: Eliminar todos los gastos
+- **Reconocimiento de voz**: Preferencias de idioma, offline, auto-guardado y alertas de presupuesto
+- **Moneda**: Símbolo de moneda
+- **Presupuesto**: Modo (diario, fin de mes, personalizado) y montos
+- **Notificaciones**: Sonido de alerta
 
 ## 🔧 Configuración de Desarrollo
 
@@ -101,18 +109,16 @@ app/src/main/java/com/example/kolki/
 3. Sync del proyecto con Gradle
 4. Ejecutar en dispositivo/emulador
 
-### 🎤 Configuración de Vosk
-La app descarga automáticamente el modelo de voz en español la primera vez que se usa. Requiere:
-- Conexión a internet (solo primera vez)
-- Espacio de almacenamiento (~50MB para el modelo)
-- Permisos de micrófono
+### 🎤 Notas sobre reconocimiento de voz
+- Usa el motor de voz del sistema.
+- Requiere permisos de micrófono.
+- El overlay rápido despierta la pantalla brevemente para dictar.
 
 ## 🔒 Permisos Requeridos
 
 ```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 ```
 
 ## 🎨 Características de UX
@@ -143,8 +149,9 @@ La app descarga automáticamente el modelo de voz en español la primera vez que
 
 ### Reconocimiento de Voz No Funciona
 - Verificar permisos de micrófono
-- Comprobar que el modelo Vosk se descargó correctamente
-- Reiniciar la aplicación
+- Asegurar que no haya otra app usando el micrófono
+- Si falla tras uso prolongado: cerrar la pantalla de voz; el app limpia el motor y reintenta con backoff
+- Reiniciar la aplicación si persiste
 
 ### Base de Datos Corrupta
 - Usar la opción "Limpiar Datos" en Perfil
@@ -153,6 +160,12 @@ La app descarga automáticamente el modelo de voz en español la primera vez que
 ### Rendimiento Lento
 - Limpiar datos antiguos
 - Verificar espacio de almacenamiento disponible
+
+## ✨ Cambios recientes destacados
+- **Estabilidad de voz**: Bloqueo de sesiones concurrentes y destrucción segura del `SpeechRecognizer` en `VolumeKeyService` y `SimpleSpeechRecognizer`.
+- **Backoff en reintentos**: Pequeña espera antes de recrear el reconocedor tras errores.
+- **UI de Estadísticas**: Tarjetas superiores unificadas visualmente con barras segmentadas rojo/verde (mensual/saldo y diario/mensual).
+- **Navegación**: Optimización de backstack y retorno al root por pestaña.
 
 ## 📄 Licencia
 

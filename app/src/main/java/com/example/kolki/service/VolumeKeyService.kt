@@ -10,7 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import com.example.kolki.speech.SimpleSpeechRecognizer
 import com.example.kolki.speech.ExpenseVoiceParser
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +33,7 @@ class VolumeKeyService : Service() {
         speechRecognizer = SimpleSpeechRecognizer(this)
         voiceParser = ExpenseVoiceParser()
         
-        val storage = SimpleExpenseStorage(this)
+        val storage = RoomStorageAdapter(this)
         repository = ExpenseRepository(storage)
         
         // Speech recognizer is ready to use

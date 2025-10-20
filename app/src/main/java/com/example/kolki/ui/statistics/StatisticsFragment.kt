@@ -7,11 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.kolki.databinding.FragmentStatisticsBinding
 import com.example.kolki.ui.expenses.ExpensesAdapter
 import com.example.kolki.data.SimpleExpense
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.RoomStorageAdapter
+import com.example.kolki.data.ExpenseStoragePort
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.XAxis
@@ -28,6 +30,8 @@ import java.text.SimpleDateFormat
 import androidx.navigation.fragment.findNavController
 import com.example.kolki.util.BudgetLog
 import java.util.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class StatisticsFragment : Fragment() {
 
@@ -39,7 +43,7 @@ class StatisticsFragment : Fragment() {
     private lateinit var recentExpensesAdapter: ExpensesAdapter
     
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("es", "PE"))
-    private lateinit var storage: SimpleExpenseStorage
+    private lateinit var storage: ExpenseStoragePort
     private val parser by lazy { ExpenseVoiceParser() }
     private val canonicalSet = setOf(
         "Alimentación", "Transporte", "Entretenimiento", "Salud",
@@ -141,13 +145,17 @@ class StatisticsFragment : Fragment() {
                 progContainer?.visibility = android.view.View.VISIBLE
                 val redP = (monthSpent / total).coerceIn(0.0, 1.0).toFloat()
                 val greenP = (1f - redP).coerceIn(0f, 1f)
-                (progRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                    it.weight = if (redP <= 0f) 0f else redP
-                    progRed.layoutParams = it
+                if (progRed != null) {
+                    (progRed.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                        lp.weight = if (redP <= 0f) 0f else redP
+                        progRed.layoutParams = lp
+                    }
                 }
-                (progGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                    it.weight = if (greenP <= 0f) 0f else greenP
-                    progGreen.layoutParams = it
+                if (progGreen != null) {
+                    (progGreen.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                        lp.weight = if (greenP <= 0f) 0f else greenP
+                        progGreen.layoutParams = lp
+                    }
                 }
                 progContainer?.requestLayout()
             } else {
@@ -378,13 +386,17 @@ class StatisticsFragment : Fragment() {
             val denom = if (baselinePerDay > 0) baselinePerDay.toDouble() else 1.0
             val pct = (todaySpent / denom).coerceIn(0.0, 1.0).toFloat()
             val left = (1f - pct).coerceIn(0f, 1f)
-            (barDailyRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                it.weight = if (pct <= 0f) 0f else pct
-                barDailyRed.layoutParams = it
+            if (barDailyRed != null) {
+                (barDailyRed.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                    lp.weight = if (pct <= 0f) 0f else pct
+                    barDailyRed.layoutParams = lp
+                }
             }
-            (barDailyGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                it.weight = if (left <= 0f) 0f else left
-                barDailyGreen.layoutParams = it
+            if (barDailyGreen != null) {
+                (barDailyGreen.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                    lp.weight = if (left <= 0f) 0f else left
+                    barDailyGreen.layoutParams = lp
+                }
             }
             barDaily?.requestLayout()
         } else {
@@ -402,13 +414,17 @@ class StatisticsFragment : Fragment() {
             val denom = if (amount > 0.0) amount else 1.0
             val pct = (spent / denom).coerceIn(0.0, 1.0).toFloat()
             val left = (1f - pct).coerceIn(0f, 1f)
-            (barMonthlyRed?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                it.weight = if (pct <= 0f) 0f else pct
-                barMonthlyRed.layoutParams = it
+            if (barMonthlyRed != null) {
+                (barMonthlyRed.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                    lp.weight = if (pct <= 0f) 0f else pct
+                    barMonthlyRed.layoutParams = lp
+                }
             }
-            (barMonthlyGreen?.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let {
-                it.weight = if (left <= 0f) 0f else left
-                barMonthlyGreen.layoutParams = it
+            if (barMonthlyGreen != null) {
+                (barMonthlyGreen.layoutParams as? android.widget.LinearLayout.LayoutParams)?.let { lp ->
+                    lp.weight = if (left <= 0f) 0f else left
+                    barMonthlyGreen.layoutParams = lp
+                }
             }
             barMonthly?.requestLayout()
         }
@@ -418,7 +434,7 @@ class StatisticsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         viewModel = ViewModelProvider(this)[StatisticsViewModel::class.java]
-        storage = SimpleExpenseStorage(requireContext())
+        storage = RoomStorageAdapter(requireContext())
         
         setupRecyclerViews()
         setupPeriodToggle()
@@ -456,6 +472,22 @@ class StatisticsFragment : Fragment() {
         view.findViewById<android.view.View>(com.example.kolki.R.id.deepAnalysisButton)?.setOnClickListener {
             try { findNavController().navigate(com.example.kolki.R.id.navigation_deep_analysis) } catch (_: Exception) {
                 android.widget.Toast.makeText(requireContext(), "No se pudo abrir Análisis Profundo", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Re-render charts when Room emits first data (initial load) and on changes
+        viewLifecycleOwner.lifecycleScope.launch {
+            storage.expenses.collectLatest {
+                try {
+                    renderWeek(currentWeekMonday)
+                } catch (_: Exception) {}
+                try {
+                    // Only renders if start/end are set
+                    renderPie()
+                } catch (_: Exception) {}
+                // Also refresh budget/summary dependent on snapshots
+                try { updateSummaryCard() } catch (_: Exception) {}
+                try { updateBudgetHint() } catch (_: Exception) {}
             }
         }
     }

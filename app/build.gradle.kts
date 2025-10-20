@@ -1,6 +1,23 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
+}
+
+kapt {
+    javacOptions {
+        // Work around JDK 21 module encapsulation if Gradle JDK is 21+
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
+        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED")
+        option("-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
+    }
 }
 
 android {
@@ -27,11 +44,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         viewBinding = true
@@ -53,10 +70,10 @@ dependencies {
     implementation(libs.androidx.cardview)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     
-    // Room database (simplified without KAPT)
-    // implementation(libs.androidx.room.runtime)
-    // implementation(libs.androidx.room.ktx)
-    // kapt(libs.androidx.room.compiler)
+    // Room database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
     
     // Vosk speech recognition (commented out for now)
     // implementation(libs.vosk.android)

@@ -8,7 +8,8 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.switchMap
 import com.example.kolki.data.SimpleCategoryTotal
 import com.example.kolki.data.SimpleExpense
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import java.util.*
 
@@ -28,7 +29,7 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
     val remaining: LiveData<Double>
     
     init {
-        val storage = SimpleExpenseStorage(application)
+        val storage: ExpenseStoragePort = RoomStorageAdapter(application)
         repository = ExpenseRepository(storage)
         
         totalAmount = repository.getTotalExpenses().asLiveData()

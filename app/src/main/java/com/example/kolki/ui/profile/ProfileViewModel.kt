@@ -7,7 +7,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.kolki.data.SimpleExpense
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import kotlinx.coroutines.launch
 import java.io.File
@@ -22,7 +23,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val expenses: LiveData<List<SimpleExpense>>
     
     init {
-        val storage = SimpleExpenseStorage(application)
+        val storage: ExpenseStoragePort = RoomStorageAdapter(application)
         repository = ExpenseRepository(storage)
         expenses = repository.getAllExpenses().asLiveData()
     }

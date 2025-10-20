@@ -9,7 +9,7 @@ import android.content.SharedPreferences
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import com.example.kolki.speech.ExpenseVoiceParser
 import java.util.concurrent.atomic.AtomicBoolean
@@ -29,7 +29,7 @@ class GlobalKeyAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         prefs = getSharedPreferences("kolki_prefs", Context.MODE_PRIVATE)
-        repository = ExpenseRepository(SimpleExpenseStorage(this))
+        repository = ExpenseRepository(RoomStorageAdapter(this))
         voiceParser = ExpenseVoiceParser()
         notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannelIfNeeded()

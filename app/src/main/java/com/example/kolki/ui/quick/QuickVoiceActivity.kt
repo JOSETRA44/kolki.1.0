@@ -16,7 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.example.kolki.R
 import com.example.kolki.data.SimpleExpense
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.RoomStorageAdapter
 import com.example.kolki.repository.ExpenseRepository
 import com.example.kolki.speech.ExpenseVoiceParser
 import com.example.kolki.speech.SimpleSpeechRecognizer
@@ -55,7 +55,7 @@ class QuickVoiceActivity : AppCompatActivity() {
 
         statusText = findViewById(R.id.quickVoiceStatus)
         parser = ExpenseVoiceParser()
-        repository = ExpenseRepository(SimpleExpenseStorage(this))
+        repository = ExpenseRepository(RoomStorageAdapter(this))
 
         try { Toast.makeText(this, "Kolki: overlay abierto", Toast.LENGTH_SHORT).show() } catch (_: Exception) {}
 

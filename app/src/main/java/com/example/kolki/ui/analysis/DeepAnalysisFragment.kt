@@ -15,7 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.fragment.app.Fragment
 import com.example.kolki.R
-import com.example.kolki.data.SimpleExpenseStorage
+import com.example.kolki.data.ExpenseStoragePort
+import com.example.kolki.data.RoomStorageAdapter
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -23,7 +24,7 @@ import java.util.Locale
 
 class DeepAnalysisFragment : Fragment() {
 
-    private lateinit var storage: SimpleExpenseStorage
+    private lateinit var storage: ExpenseStoragePort
     private lateinit var chatAdapter: ChatAdapter
     private val messages = mutableListOf<ChatMessage>()
     private var lastIaCallMs: Long = 0L
@@ -369,7 +370,7 @@ class DeepAnalysisFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        storage = SimpleExpenseStorage(requireContext())
+        storage = RoomStorageAdapter(requireContext())
 
         val quickGroup = view.findViewById<com.google.android.material.chip.ChipGroup>(R.id.quickQuestionsGroup)
         val inputEt = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputEditText)
