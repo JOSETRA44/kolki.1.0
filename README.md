@@ -1,23 +1,23 @@
-# 💰 Kolki - Control de Gastos con Voz
+# Kolki - Control de Gastos con Voz
 
 Aplicación Android para control de gastos personales con registro por voz y visualizaciones útiles.
 
-## 🚀 Características Principales
+## Características Principales
 
-### 📱 Funcionalidades Core
+### Funcionalidades Core
 - **Registro rápido por voz**: Doble toque en botones de volumen para activar
 - **Registro manual**: Formulario intuitivo con categorías predefinidas
 - **Base de datos local**: Almacenamiento offline con SQLite/Room
 - **Navegación por pestañas**: Gastos, Estadísticas y Perfiles
 
-### 🎤 Reconocimiento de Voz
+### Reconocimiento de Voz
 - **Sistema Android**: Usa `SpeechRecognizer` con `RecognitionListener`
 - **Formato natural**: "Comida, 25, almuerzo en la universidad"
 - **Categorías inteligentes**: Reconoce categorías comunes automáticamente
 - **Números en español**: Convierte palabras a números
 - **Estabilidad mejorada**: Limpieza robusta y prevención de sesiones concurrentes del micrófono
 
-### 📊 Estadísticas y Visualización
+### Estadísticas y Visualización
 - **Totales por período**: Semanal, mensual, anual y rangos personalizados
 - **Distribución por categoría**: Gráfico circular con desglose y drilldown
 - **Barras semanales**: Comparativa por días de la semana
@@ -26,9 +26,9 @@ Aplicación Android para control de gastos personales con registro por voz y vis
   - Inferior (toggle): "Presupuesto (Hoy)" / "Presupuesto (Mes)" con barras horizontales (diaria o mensual) Rojo/Verde.
 - **Gastos recientes**: Lista de últimos movimientos
 
-## 🏗️ Arquitectura Técnica
+## Arquitectura Técnica
 
-### 🛠️ Stack Tecnológico
+### Stack Tecnológico
 - **Lenguaje**: Kotlin
 - **UI**: Material Design 3 + View Binding
 - **Base de datos**: Room (SQLite)
@@ -37,7 +37,7 @@ Aplicación Android para control de gastos personales con registro por voz y vis
 - **Reconocimiento de voz**: Android `SpeechRecognizer`
 - **Concurrencia**: Kotlin Coroutines
 
-### 📁 Estructura del Proyecto (simplificada)
+### Estructura del Proyecto (simplificada)
 ```
 app/src/main/java/com/example/kolki/
 ├── data/                    # Modelos y base de datos
@@ -61,9 +61,9 @@ app/src/main/java/com/example/kolki/
     └── RecognizerService.kt
 ```
 
-## 🎯 Uso de la Aplicación
+## Uso de la Aplicación
 
-### 📝 Registro Manual
+### Registro Manual
 1. Abrir la app en la pestaña "Gastos"
 2. Completar el formulario:
    - **Categoría**: Seleccionar o escribir nueva
@@ -71,7 +71,7 @@ app/src/main/java/com/example/kolki/
    - **Comentario**: Descripción opcional
 3. Presionar "Guardar"
 
-### 🎤 Registro por Voz
+### Registro por Voz
 **Método 1: Desde la app**
 1. Presionar botón "Por Voz"
 2. Dictar en formato: "categoría, monto, comentario"
@@ -82,59 +82,59 @@ app/src/main/java/com/example/kolki/
 2. Dictar el gasto cuando aparezca la interfaz
 3. Se guarda automáticamente
 
-### 📊 Ver Estadísticas
+### Ver Estadísticas
 - **Totales y saldo**: Toggle en la tarjeta superior
 - **Períodos**: Semana, mes y rango
 - **Presupuesto**: Toggle diario/mensual con barras Rojo/Verde
 - **Categorías**: Distribución con drilldown
 - **Recientes**: Últimos gastos
 
-### ⚙️ Configuración
+### Configuración
 - **Reconocimiento de voz**: Preferencias de idioma, offline, auto-guardado y alertas de presupuesto
 - **Moneda**: Símbolo de moneda
 - **Presupuesto**: Modo (diario, fin de mes, personalizado) y montos
 - **Notificaciones**: Sonido de alerta
 
-## 🔧 Configuración de Desarrollo
+## Configuración de Desarrollo
 
-### 📋 Requisitos
+### Requisitos
 - Android Studio Arctic Fox o superior
 - SDK mínimo: API 26 (Android 8.0)
 - SDK objetivo: API 36 (Android 15)
 - Kotlin 2.0.21
 
-### 🚀 Instalación
+### Instalación
 1. Clonar el repositorio
 2. Abrir en Android Studio
 3. Sync del proyecto con Gradle
 4. Ejecutar en dispositivo/emulador
 
-### 🎤 Notas sobre reconocimiento de voz
+### Notas sobre reconocimiento de voz
 - Usa el motor de voz del sistema.
 - Requiere permisos de micrófono.
 - El overlay rápido despierta la pantalla brevemente para dictar.
 
-## 🔒 Permisos Requeridos
+## Permisos Requeridos
 
 ```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 ```
 
-## 🎨 Características de UX
+## Características de UX
 
-### 🎯 Diseño Intuitivo
+### Diseño Intuitivo
 - **Material Design 3**: Interfaz moderna y familiar
 - **Navegación clara**: Bottom navigation con iconos descriptivos
 - **Feedback visual**: Animaciones y estados de carga
 - **Accesibilidad**: Soporte para lectores de pantalla
 
-### 🚀 Rendimiento
+### Rendimiento
 - **Base de datos local**: Acceso instantáneo sin internet
 - **Reconocimiento offline**: No requiere conexión después de la configuración inicial
 - **Arquitectura eficiente**: MVVM con LiveData para actualizaciones reactivas
 
-## 🔮 Funcionalidades Futuras
+## Funcionalidades Futuras
 
 - [ ] Sincronización en la nube
 - [ ] Presupuestos y metas de gasto
@@ -145,7 +145,7 @@ app/src/main/java/com/example/kolki/
 - [ ] Modo oscuro
 - [ ] Widget para pantalla de inicio
 
-## 🐛 Solución de Problemas
+## Solución de Problemas
 
 ### Reconocimiento de Voz No Funciona
 - Verificar permisos de micrófono
@@ -161,16 +161,16 @@ app/src/main/java/com/example/kolki/
 - Limpiar datos antiguos
 - Verificar espacio de almacenamiento disponible
 
-## ✨ Cambios recientes destacados
+## Cambios recientes destacados
 - **Estabilidad de voz**: Bloqueo de sesiones concurrentes y destrucción segura del `SpeechRecognizer` en `VolumeKeyService` y `SimpleSpeechRecognizer`.
 - **Backoff en reintentos**: Pequeña espera antes de recrear el reconocedor tras errores.
 - **UI de Estadísticas**: Tarjetas superiores unificadas visualmente con barras segmentadas rojo/verde (mensual/saldo y diario/mensual).
 - **Navegación**: Optimización de backstack y retorno al root por pestaña.
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
 ---
 
-**Desarrollado con ❤️ usando Android Studio y Kotlin**
+**Desarrollado usando Android Studio y Kotlin**
