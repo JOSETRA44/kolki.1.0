@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Kolki — Controla tus gastos con voz. App Android offline-first con reconocimiento de voz en español." />
+  <title>Kolki · Control de Gastos con Voz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="#hero" class="nav-logo">
+        <span class="logo-mark">K</span>
+        <span class="logo-text">Kolki</span>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#features">Características</a></li>
+        <li><a href="#how-it-works">Cómo Usarlo</a></li>
+        <li><a href="#stats">Estadísticas</a></li>
+        <li><a href="#install">Instalar</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="btn-theme" id="themeToggle" aria-label="Cambiar tema">
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="btn-hamburger" id="hamburger" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="hero">
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <span class="badge animate-on-scroll">Android · Offline · Kotlin</span>
+        <h1 class="animate-on-scroll">Controla tus gastos<br /><span class="gradient-text">con tu voz</span></h1>
+        <p class="hero-sub animate-on-scroll">
+          Di <code class="inline-code">"Comida, 25, almuerzo"</code> y listo.<br />
+          Rápido, sin internet y sin complicaciones.
+        </p>
+        <div class="hero-cta animate-on-scroll">
+          <a href="#install" class="btn btn-primary">Comenzar</a>
+          <a href="https://github.com/josetra44/kolki.1.0" target="_blank" rel="noopener" class="btn btn-outline">Ver en GitHub</a>
+        </div>
+      </div>
+      <div class="hero-mockup animate-on-scroll">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-bar green"></div>
+            <div class="phone-bar red" style="width:55%"></div>
+            <div class="phone-bar purple" style="width:80%"></div>
+            <div class="phone-bar muted" style="width:40%"></div>
+            <div class="phone-chart">
+              <div class="chart-bar" style="height:60%"></div>
+              <div class="chart-bar" style="height:85%"></div>
+              <div class="chart-bar" style="height:45%"></div>
+              <div class="chart-bar" style="height:70%"></div>
+              <div class="chart-bar" style="height:55%"></div>
+              <div class="chart-bar" style="height:90%"></div>
+              <div class="chart-bar" style="height:65%"></div>
+            </div>
+            <div class="mic-pulse">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1.93V18H9v2h6v-2h-2v-2.07A5.002 5.002 0 0 0 17 11h-2a3 3 0 0 1-6 0H7a5.002 5.002 0 0 0 4 4.93z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 class="section-title animate-on-scroll">Características Principales</h2>
+      <p class="section-sub animate-on-scroll">Todo lo que necesitas para registrar y visualizar tus gastos.</p>
+      <div class="grid grid-3">
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-purple">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1.93V18H9v2h6v-2h-2v-2.07A5.002 5.002 0 0 0 17 11h-2a3 3 0 0 1-6 0H7a5.002 5.002 0 0 0 4 4.93z"/></svg>
+          </div>
+          <h3>Voz Instantánea</h3>
+          <p>Doble toque en el botón de volumen. Di el gasto, se guarda solo. Sin abrir la app.</p>
+        </div>
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" opacity=".3"/></svg>
+          </div>
+          <h3>100% Offline</h3>
+          <p>Base de datos local SQLite con Room. Sin internet, sin servidores, sin suscripciones.</p>
+        </div>
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-purple">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+          </div>
+          <h3>Parsing Inteligente</h3>
+          <p>Entiende "Comida, veinticinco, almuerzo en la universidad" en español natural.</p>
+        </div>
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          </div>
+          <h3>Estadísticas Ricas</h3>
+          <p>Gráficos circulares por categoría, barras semanales y barras de presupuesto rojo/verde.</p>
+        </div>
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-purple">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
+          <h3>Material Design 3</h3>
+          <p>Interfaz moderna y familiar. Modo oscuro, animaciones nativas y accesibilidad completa.</p>
+        </div>
+
+        <div class="card animate-on-scroll">
+          <div class="card-icon icon-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2.05V4.05C17.39 4.59 20.5 8.58 19.96 12.97C19.5 16.61 16.64 19.5 13 19.93V21.93C18.5 21.38 22.5 16.5 21.95 11C21.5 6.25 17.73 2.5 13 2.05M11 2.06C9.05 2.25 7.19 3 5.67 4.26L7.1 5.74C8.22 4.84 9.57 4.26 11 4.06V2.06M4.26 5.67C3 7.19 2.25 9.04 2.05 11H4.05C4.24 9.58 4.8 8.23 5.69 7.1L4.26 5.67M2.06 13C2.26 14.96 3.03 16.81 4.27 18.33L5.69 16.9C4.81 15.77 4.24 14.42 4.06 13H2.06M7.1 18.37L5.67 19.74C7.18 21 9.04 21.79 11 22V20C9.58 19.82 8.23 19.25 7.1 18.37Z"/></svg>
+          </div>
+          <h3>Acceso Rápido</h3>
+          <p>Tile en ajustes rápidos del panel de notificaciones. Registra un gasto sin ni abrir la app.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section class="section section-alt" id="how-it-works">
+    <div class="container">
+      <h2 class="section-title animate-on-scroll">Cómo Usarlo</h2>
+      <p class="section-sub animate-on-scroll">Tres pasos. Menos de cinco segundos.</p>
+      <div class="steps">
+
+        <div class="step animate-on-scroll">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>Activa</h3>
+            <p>Doble toque rápido en el botón de volumen, o abre la app y presiona <strong>"Por Voz"</strong>.</p>
+          </div>
+        </div>
+
+        <div class="step-divider animate-on-scroll"></div>
+
+        <div class="step animate-on-scroll">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>Dicta</h3>
+            <p>Habla en formato <code class="inline-code">categoría, monto, comentario</code>.<br />
+            Ejemplo: <em>"Comida, veinticinco, almuerzo en la universidad"</em></p>
+          </div>
+        </div>
+
+        <div class="step-divider animate-on-scroll"></div>
+
+        <div class="step animate-on-scroll">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>Listo</h3>
+            <p>El gasto se guarda automáticamente con categoría, monto y comentario. Sin tocar nada más.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Manual entry note -->
+      <div class="info-box animate-on-scroll">
+        <strong>¿Prefieres hacerlo a mano?</strong> También puedes registrar gastos manualmente desde la pestaña Gastos, completando categoría, monto y comentario en el formulario.
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATISTICS ========== -->
+  <section class="section" id="stats">
+    <div class="container">
+      <h2 class="section-title animate-on-scroll">Estadísticas Inteligentes</h2>
+      <p class="section-sub animate-on-scroll">Visualiza tus patrones de gasto de un vistazo.</p>
+      <div class="stats-grid">
+
+        <div class="stat-card animate-on-scroll">
+          <div class="stat-label">Este Mes · Gasto total</div>
+          <div class="stat-amount">S/ 420.50</div>
+          <div class="segmented-bar">
+            <div class="seg-red" style="width: 56%"></div>
+            <div class="seg-green" style="width: 44%"></div>
+          </div>
+          <div class="seg-legend">
+            <span class="dot-red"></span>Gastado (S/420)
+            <span class="dot-green"></span>Saldo (S/330)
+          </div>
+        </div>
+
+        <div class="stat-card animate-on-scroll">
+          <div class="stat-label">Distribución por Categoría</div>
+          <div class="category-list">
+            <div class="cat-row">
+              <span class="cat-name">Comida</span>
+              <div class="cat-bar"><div style="width:65%; background: var(--color-primary)"></div></div>
+              <span class="cat-pct">65%</span>
+            </div>
+            <div class="cat-row">
+              <span class="cat-name">Transporte</span>
+              <div class="cat-bar"><div style="width:20%; background: var(--color-secondary)"></div></div>
+              <span class="cat-pct">20%</span>
+            </div>
+            <div class="cat-row">
+              <span class="cat-name">Ocio</span>
+              <div class="cat-bar"><div style="width:10%; background: var(--color-accent)"></div></div>
+              <span class="cat-pct">10%</span>
+            </div>
+            <div class="cat-row">
+              <span class="cat-name">Otros</span>
+              <div class="cat-bar"><div style="width:5%; background: var(--color-text-muted)"></div></div>
+              <span class="cat-pct">5%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card animate-on-scroll">
+          <div class="stat-label">Gastos por Día · Esta semana</div>
+          <div class="weekly-chart">
+            <div class="w-bar-wrap"><div class="w-bar" style="height:55%"></div><span>L</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:80%"></div><span>M</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:40%"></div><span>X</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:70%"></div><span>J</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:90%"></div><span>V</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:30%"></div><span>S</span></div>
+            <div class="w-bar-wrap"><div class="w-bar" style="height:50%"></div><span>D</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TECH STACK ========== -->
+  <section class="section section-alt" id="tech">
+    <div class="container">
+      <h2 class="section-title animate-on-scroll">Arquitectura Técnica</h2>
+      <p class="section-sub animate-on-scroll">Construida con tecnologías modernas de Android para máxima estabilidad y rendimiento.</p>
+      <div class="tech-pills animate-on-scroll">
+        <span class="pill">Kotlin</span>
+        <span class="pill">Android SDK</span>
+        <span class="pill">Room · SQLite</span>
+        <span class="pill">MVVM</span>
+        <span class="pill">Repository Pattern</span>
+        <span class="pill">Material Design 3</span>
+        <span class="pill">Kotlin Coroutines</span>
+        <span class="pill">LiveData</span>
+        <span class="pill">ViewModel</span>
+        <span class="pill">MPAndroidChart</span>
+        <span class="pill">Navigation Component</span>
+        <span class="pill">View Binding</span>
+      </div>
+      <div class="arch-note animate-on-scroll">
+        <p>Patrón <strong>MVVM</strong> con capa de <strong>Repository</strong>, base de datos local <strong>Room</strong> y reconocimiento de voz nativo de Android. Arquitectura desacoplada y testeable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FUTURE ========== -->
+  <section class="section" id="future">
+    <div class="container">
+      <h2 class="section-title animate-on-scroll">Próximamente</h2>
+      <p class="section-sub animate-on-scroll">Funcionalidades planificadas para próximas versiones.</p>
+      <div class="grid grid-3">
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Sincronización en la nube</strong>
+            <p>Respaldo y acceso desde múltiples dispositivos.</p>
+          </div>
+        </div>
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Exportación CSV / PDF</strong>
+            <p>Descarga tus gastos en el formato que prefieras.</p>
+          </div>
+        </div>
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Widget de pantalla</strong>
+            <p>Registra un gasto directo desde la pantalla de inicio.</p>
+          </div>
+        </div>
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Múltiples carteras</strong>
+            <p>Separa gastos por cuenta, tarjeta o proyecto.</p>
+          </div>
+        </div>
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Recordatorios inteligentes</strong>
+            <p>Alertas cuando te acercas al límite de presupuesto.</p>
+          </div>
+        </div>
+        <div class="future-item animate-on-scroll">
+          <span class="future-check">○</span>
+          <div>
+            <strong>Gráficos avanzados</strong>
+            <p>Tendencias mensuales, comparativas y análisis IA.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== INSTALL ========== -->
+  <section class="section section-alt" id="install">
+    <div class="container install-center">
+      <h2 class="section-title animate-on-scroll">Comenzar</h2>
+      <p class="section-sub animate-on-scroll">Clona el repositorio y ejecuta en Android Studio.</p>
+
+      <div class="code-block animate-on-scroll">
+        <div class="code-header">
+          <span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span>
+          <span class="code-lang">bash</span>
+        </div>
+        <pre><code>git clone https://github.com/josetra44/kolki.1.0.git
+cd kolki.1.0</code></pre>
+      </div>
+
+      <div class="install-steps animate-on-scroll">
+        <div class="install-step">
+          <span class="step-num">1</span>
+          <span>Abre el proyecto en <strong>Android Studio Arctic Fox</strong> o superior.</span>
+        </div>
+        <div class="install-step">
+          <span class="step-num">2</span>
+          <span>Sincroniza el proyecto con <strong>Gradle</strong> (Sync Now).</span>
+        </div>
+        <div class="install-step">
+          <span class="step-num">3</span>
+          <span>Conecta un dispositivo Android <strong>API 26+</strong> o abre el emulador.</span>
+        </div>
+        <div class="install-step">
+          <span class="step-num">4</span>
+          <span>Presiona <strong>Run</strong> ▶ y otorga permiso de micrófono.</span>
+        </div>
+      </div>
+
+      <div class="requirements animate-on-scroll">
+        <h4>Requisitos mínimos</h4>
+        <ul>
+          <li>Android Studio Arctic Fox o superior</li>
+          <li>SDK mínimo: API 26 (Android 8.0)</li>
+          <li>SDK objetivo: API 36 (Android 15)</li>
+          <li>Kotlin 2.0.21</li>
+          <li>Java 17</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-left">
+        <span class="logo-mark small">K</span>
+        <span>Kolki · MIT License · 2024</span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/josetra44/kolki.1.0" target="_blank" rel="noopener">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
